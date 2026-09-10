@@ -4,7 +4,7 @@ from openmdao_components import SphereFunction
 
 
 if __name__ == "__main__":
-    problem = om.Problem()
+    problem = om.Problem(reports=False)
     model = problem.model
     model.add_subsystem("objective_function", subsys=SphereFunction(), promotes=["*"])
 

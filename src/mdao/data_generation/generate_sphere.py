@@ -15,7 +15,7 @@ if __name__ == "__main__":
     meshgrid_x = search_domain_x.flatten()
     meshgrid_y = search_domain_y.flatten()
 
-    problem = om.Problem()
+    problem = om.Problem(reports=False)
     model = problem.model
     model.add_subsystem(
         "data",

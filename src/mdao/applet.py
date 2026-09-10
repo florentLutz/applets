@@ -26,10 +26,8 @@ OPTIMIZER_LIST = [
 ]
 
 TEST_FUNCTIONS = {
-    "Sphere": {
-        "filename": "data_sphere.csv",
-        "openmdao_component": "SphereFunction"
-    }
+    "Sphere": {"filename": "data_sphere.csv", "openmdao_component": "SphereFunction"},
+    "Jones": {"filename": "data_jones.csv", "openmdao_component": "JonesFunction"},
 }
 
 
@@ -86,8 +84,9 @@ if __name__ == "__main__":
     st.sidebar.write("Test case selection")
     st.session_state.test_function = st.sidebar.selectbox(
         label="Choose an test case",
-        options=["Sphere"],
+        options=TEST_FUNCTIONS.keys(),
         on_change=clear_optimizer_history,
+        index=list(TEST_FUNCTIONS.keys()).index("Sphere"),
     )
 
     # Load background data
@@ -135,11 +134,11 @@ if __name__ == "__main__":
 
     problem = om.Problem(reports=False)
     model = problem.model
-    component_name = TEST_FUNCTIONS[st.session_state.test_function]["openmdao_component"]
+    component_name = TEST_FUNCTIONS[st.session_state.test_function][
+        "openmdao_component"
+    ]
     subsystem = component_library.__dict__[component_name]()
-    model.add_subsystem(
-        "objective_function", subsys=subsystem, promotes=["*"]
-    )
+    model.add_subsystem("objective_function", subsys=subsystem, promotes=["*"])
 
     problem.driver = om.ScipyOptimizeDriver()
     problem.driver.options["optimizer"] = st.session_state.optimizer_selection
@@ -151,7 +150,6 @@ if __name__ == "__main__":
     model.add_objective("z")
 
     problem.setup()
-
 
     problem.set_val("x", x_starting_point)
     problem.set_val("y", y_starting_point)
@@ -201,8 +199,8 @@ if __name__ == "__main__":
             width=800,
             margin=dict(l=5, r=5, t=5, b=5),
         )
-        fig.update_xaxes(range=[-2, 2])
-        fig.update_yaxes(range=[-2, 2])
+        fig.update_xaxes(range=[min(x_for_display), max(x_for_display)])
+        fig.update_yaxes(range=[min(y_for_display), max(y_for_display)])
 
         if optim_x:
             optimizer_trace = go.Scatter(
