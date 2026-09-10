@@ -5,11 +5,11 @@ import pandas as pd
 
 import openmdao.api as om
 
-from mdao.openmdao_components.jones import JonesFunction
+from mdao.openmdao_components.bean import BeanFunction
 
 if __name__ == "__main__":
-    search_domain_x = np.linspace(-1, 3, 101)
-    search_domain_y = np.linspace(-1, 3, 101)
+    search_domain_x = np.linspace(-2, 2.5, 101)
+    search_domain_y = np.linspace(-1, 3.5, 101)
 
     x_for_partials = search_domain_x[int(len(search_domain_x) / 2)]
     y_for_partials = search_domain_y[int(len(search_domain_y) / 2)]
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     model = problem.model
     model.add_subsystem(
         "data",
-        subsys=JonesFunction(number_of_points=len(meshgrid_x)),
+        subsys=BeanFunction(number_of_points=len(meshgrid_x)),
         promotes=["*"],
     )
     model.nonlinear_solver = om.NonlinearRunOnce()
@@ -43,7 +43,7 @@ if __name__ == "__main__":
         }
     )
 
-    output_file_path = pathlib.Path(__file__).parent.parent / "data" / "data_jones.csv"
+    output_file_path = pathlib.Path(__file__).parent.parent / "data" / "data_bean.csv"
 
     df.to_csv(output_file_path, index=False)
 
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     partials_model = partials_problem.model
     partials_model.add_subsystem(
         "data",
-        subsys=JonesFunction(),
+        subsys=BeanFunction(),
         promotes=["*"],
     )
     partials_model.nonlinear_solver = om.NonlinearRunOnce()
