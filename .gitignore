@@ -1,0 +1,81 @@
+# Excel modules management
+~$modules_breakdown.xlsx
+
+# Temporary and binary files
+*~
+*.py[cod]
+*.so
+*.cfg
+*.pyc
+!.isort.cfg
+!setup.cfg
+*.orig
+*.log
+*.pot
+__pycache__/*
+.cache/*
+.*.swp
+**/.ipynb_checkpoints/**
+tmp/
+
+# Error or check file
+*.out
+
+# Solver recorded data
+*.sql
+
+# Project files
+.ropeproject
+.project
+.pydevproject
+.settings
+.idea
+.vscode
+tags
+
+# Package files
+*.egg
+*.eggs/
+.installed.cfg
+*.egg-info
+**/reports/**
+
+# Unittest and coverage
+**/htmlcov/**
+.coverage
+.tox
+junit.xml
+coverage.xml
+.pytest_cache/
+
+# test results
+results/
+results*/
+n2.html
+
+# Build and docs folder/files
+build/*
+dist/*
+sdist/*
+docs/api/*
+docs/_rst/*
+docs/_build/*
+cover/*
+.idea/*
+MANIFEST
+
+# Per-project virtualenvs
+.venv*/
+venv*/
+
+# External tools
+/XFOIL
+
+# Private files and workdir
+**/private/**
+**/workdir/**
+
+**/.env
+
+# Package generated files
+*_updated.xlsx
