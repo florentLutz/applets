@@ -29,6 +29,10 @@ TEST_FUNCTIONS = {
     "Sphere": {"filename": "data_sphere.csv", "openmdao_component": "SphereFunction"},
     "Jones": {"filename": "data_jones.csv", "openmdao_component": "JonesFunction"},
     "Bean": {"filename": "data_bean.csv", "openmdao_component": "BeanFunction"},
+    "Himmelblau": {
+        "filename": "data_himmelblau.csv",
+        "openmdao_component": "HimmelblauFunction",
+    },
 }
 
 
