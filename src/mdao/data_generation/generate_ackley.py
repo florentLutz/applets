@@ -43,9 +43,7 @@ if __name__ == "__main__":
         }
     )
 
-    output_file_path = (
-        pathlib.Path(__file__).parent.parent / "data" / "data_ackley.csv"
-    )
+    output_file_path = pathlib.Path(__file__).parent.parent / "data" / "data_ackley.csv"
 
     df.to_csv(output_file_path, index=False)
 

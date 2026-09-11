@@ -33,7 +33,7 @@ TEST_FUNCTIONS = {
         "filename": "data_himmelblau.csv",
         "openmdao_component": "HimmelblauFunction",
     },
-    "Ackley": {"filename": "data_ackley.csv", "openmdao_component": "AckleyFunction"}
+    "Ackley": {"filename": "data_ackley.csv", "openmdao_component": "AckleyFunction"},
 }
 
 

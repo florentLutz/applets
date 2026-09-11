@@ -4,4 +4,10 @@ from .bean import BeanFunction
 from .himmelblau import HimmelblauFunction
 from .ackley import AckleyFunction
 
-__all__ = ["SphereFunction", "JonesFunction", "BeanFunction", "HimmelblauFunction", "AckleyFunction"]
+__all__ = [
+    "SphereFunction",
+    "JonesFunction",
+    "BeanFunction",
+    "HimmelblauFunction",
+    "AckleyFunction",
+]

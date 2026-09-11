@@ -57,9 +57,7 @@ class AckleyFunction(om.ExplicitComponent):
             0.5 * (inputs["x"] ** 2.0 + inputs["y"] ** 2.0)
         ) * 0.5 * 2.0 * inputs["x"] - np.exp(
             0.5
-            * (
-                np.cos(2.0 * np.pi * inputs["x"]) + np.cos(2.0 * np.pi * inputs["y"])
-            )
+            * (np.cos(2.0 * np.pi * inputs["x"]) + np.cos(2.0 * np.pi * inputs["y"]))
         ) * 0.5 * -2.0 * np.pi * np.sin(2.0 * np.pi * inputs["x"])
 
         partials["z", "y"] = -20.0 * np.exp(
@@ -68,7 +66,5 @@ class AckleyFunction(om.ExplicitComponent):
             0.5 * (inputs["x"] ** 2.0 + inputs["y"] ** 2.0)
         ) * 0.5 * 2.0 * inputs["y"] - np.exp(
             0.5
-            * (
-                np.cos(2.0 * np.pi * inputs["x"]) + np.cos(2.0 * np.pi * inputs["y"])
-            )
+            * (np.cos(2.0 * np.pi * inputs["x"]) + np.cos(2.0 * np.pi * inputs["y"]))
         ) * 0.5 * -2.0 * np.pi * np.sin(2.0 * np.pi * inputs["y"])
