@@ -1,7 +1,5 @@
 import openmdao.api as om
-
 from openmdao_components import SphereFunction
-
 
 if __name__ == "__main__":
     problem = om.Problem(reports=False)

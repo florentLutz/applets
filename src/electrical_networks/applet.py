@@ -1,6 +1,6 @@
-import streamlit as st
-import plotly.graph_objects as go
 import numpy as np
+import plotly.graph_objects as go
+import streamlit as st
 
 
 def plot_mcc_pm_torque_current(constant):
@@ -11,11 +11,9 @@ def plot_mcc_pm_torque_current(constant):
         y=constant * current,
         mode="lines",
     )
-    mcc_pm_torque_current_fig.update_xaxes(
-        title="Courant [A]", title_font=dict(size=20)
-    )
+    mcc_pm_torque_current_fig.update_xaxes(title="Courant [A]", title_font={"size": 20})
     mcc_pm_torque_current_fig.update_yaxes(
-        title="Couple [N.m]", title_font=dict(size=20), range=[0, 4.169]
+        title="Couple [N.m]", title_font={"size": 20}, range=[0, 4.169]
     )
     return mcc_pm_torque_current_fig
 
@@ -33,10 +31,10 @@ def plot_mcc_pm_torque_speed(constant, v_batt, windings_resistance):
         mode="lines",
     )
     mcc_pm_torque_speed_fig.update_xaxes(
-        title="Fréquence de rotation [tr/min]", title_font=dict(size=20)
+        title="Fréquence de rotation [tr/min]", title_font={"size": 20}
     )
     mcc_pm_torque_speed_fig.update_yaxes(
-        title="Couple [N.m]", title_font=dict(size=20), range=[0, 82]
+        title="Couple [N.m]", title_font={"size": 20}, range=[0, 82]
     )
     return mcc_pm_torque_speed_fig
 
@@ -51,10 +49,10 @@ def plot_mcc_pm_speed_current(constant, v_batt, windings_resistance):
         y=rotation_frequency,
         mode="lines",
     )
-    mcc_pm_speed_current_fig.update_xaxes(title="Courant [A]", title_font=dict(size=20))
+    mcc_pm_speed_current_fig.update_xaxes(title="Courant [A]", title_font={"size": 20})
     mcc_pm_speed_current_fig.update_yaxes(
         title="Fréquence de rotation [tr/min]",
-        title_font=dict(size=20),
+        title_font={"size": 20},
         range=[0, 3550],
     )
     return mcc_pm_speed_current_fig
@@ -68,11 +66,9 @@ def plot_mcc_se_torque_current(constant):
         y=constant * current**2.0,
         mode="lines",
     )
-    mcc_pm_torque_current_fig.update_xaxes(
-        title="Courant [A]", title_font=dict(size=20)
-    )
+    mcc_pm_torque_current_fig.update_xaxes(title="Courant [A]", title_font={"size": 20})
     mcc_pm_torque_current_fig.update_yaxes(
-        title="Couple [N.m]", title_font=dict(size=20), range=[0, 4.169]
+        title="Couple [N.m]", title_font={"size": 20}, range=[0, 4.169]
     )
     return mcc_pm_torque_current_fig
 
@@ -97,10 +93,10 @@ def plot_mcc_se_torque_speed(
         mode="lines",
     )
     mcc_pm_torque_speed_fig.update_xaxes(
-        title="Fréquence de rotation [tr/min]", title_font=dict(size=20)
+        title="Fréquence de rotation [tr/min]", title_font={"size": 20}
     )
     mcc_pm_torque_speed_fig.update_yaxes(
-        title="Couple [N.m]", title_font=dict(size=20), range=[0, 82]
+        title="Couple [N.m]", title_font={"size": 20}, range=[0, 82]
     )
     return mcc_pm_torque_speed_fig
 
@@ -119,12 +115,10 @@ def plot_mcc_se_speed_current(
         y=rotation_frequency,
         mode="lines",
     )
-    mcc_pm_speed_current_fig.update_xaxes(
-        title="Courant [A]", title_font=dict(size=20)
-    )
+    mcc_pm_speed_current_fig.update_xaxes(title="Courant [A]", title_font={"size": 20})
     mcc_pm_speed_current_fig.update_yaxes(
         title="Fréquence de rotation [tr/min]",
-        title_font=dict(size=20),
+        title_font={"size": 20},
     )
     return mcc_pm_speed_current_fig
 

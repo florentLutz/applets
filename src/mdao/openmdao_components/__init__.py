@@ -1,13 +1,13 @@
-from .sphere import SphereFunction
-from .jones import JonesFunction
+from .ackley import AckleyFunction
 from .bean import BeanFunction
 from .himmelblau import HimmelblauFunction
-from .ackley import AckleyFunction
+from .jones import JonesFunction
+from .sphere import SphereFunction
 
 __all__ = [
-    "SphereFunction",
-    "JonesFunction",
+    "AckleyFunction",
     "BeanFunction",
     "HimmelblauFunction",
-    "AckleyFunction",
+    "JonesFunction",
+    "SphereFunction",
 ]

@@ -1,10 +1,10 @@
 import pathlib
-import streamlit as st
-import pandas as pd
-import openmdao.api as om
-import plotly.graph_objects as go
 
+import openmdao.api as om
 import openmdao_components as component_library
+import pandas as pd
+import plotly.graph_objects as go
+import streamlit as st
 
 DATA_FOLDER_PATH = pathlib.Path(__file__).parent / "data"
 OPTIMIZER_LIST = [
@@ -103,8 +103,8 @@ if __name__ == "__main__":
     y_for_display = df["y"].to_numpy()
     range_y_for_display = max(y_for_display) - min(y_for_display)
 
-    step_x = list(set(list(x_for_display)))[1] - list(set(list(x_for_display)))[0]
-    step_y = list(set(list(y_for_display)))[1] - list(set(list(y_for_display)))[0]
+    step_x = list(set(x_for_display))[1] - next(iter(set(x_for_display)))
+    step_y = list(set(y_for_display))[1] - next(iter(set(y_for_display)))
 
     st.sidebar.write("Starting point selection")
     x_starting_point = st.sidebar.slider(
@@ -193,7 +193,7 @@ if __name__ == "__main__":
         starting_point = go.Scatter(
             x=[x_starting_point],
             y=[y_starting_point],
-            marker=dict(color="black", size=15, symbol="cross"),
+            marker={"color": "black", "size": 15, "symbol": "cross"},
             showlegend=False,
         )
         fig.add_trace(starting_point)
@@ -203,7 +203,7 @@ if __name__ == "__main__":
             yaxis_title="Y",
             height=int(800 * range_y_for_display / range_x_for_display),
             width=800,
-            margin=dict(l=5, r=5, t=5, b=5),
+            margin={"l": 5, "r": 5, "t": 5, "b": 5},
         )
         fig.update_xaxes(range=[min(x_for_display), max(x_for_display)])
         fig.update_yaxes(range=[min(y_for_display), max(y_for_display)])
@@ -213,11 +213,11 @@ if __name__ == "__main__":
                 x=optim_x,
                 y=optim_y,
                 mode="lines+markers",
-                marker=dict(color="red", size=8),
-                line=dict(color="red"),
+                marker={"color": "red", "size": 8},
+                line={"color": "red"},
                 showlegend=False,
                 name="Optimizer",
-                customdata=list(range(0, len(optim_x) + 0)),
+                customdata=list(range(len(optim_x) + 0)),
                 hovertemplate="X: %{x}<br>Y: %{y}<br>Func call: %{customdata}<extra></extra>",
             )
             fig.add_trace(optimizer_trace)

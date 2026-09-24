@@ -1,9 +1,8 @@
 import pathlib
 
 import numpy as np
-import pandas as pd
-
 import openmdao.api as om
+import pandas as pd
 
 from mdao.openmdao_components.sphere import SphereFunction
 
