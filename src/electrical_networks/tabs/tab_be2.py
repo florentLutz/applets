@@ -147,7 +147,7 @@ def produce_tab_be2():
     with col_sidebar:
         show_section_1 = st.checkbox(
             "Machine à courant continu - aimants permanents",
-            key="show_section_1",
+            key="show_be_2_section_1",
         )
 
         if show_section_1:
@@ -169,7 +169,7 @@ def produce_tab_be2():
 
         show_section_2 = st.checkbox(
             "Machine à courant continu - excitation série",
-            key="show_section_2",
+            key="show_be_2_section_2",
         )
 
         if show_section_2:
