@@ -131,8 +131,9 @@ if __name__ == "__main__":
     # ============================================================
     # CALCULATION
     # ============================================================
+    # The right numbers we should get is npax=150, 6 pax per rows, wing_area=122.4
     if page == "Overview":
-        fig = plot_library.aircraft_geometry_plot(150, 6, 120, 35, 25000.0)
+        fig = plot_library.aircraft_geometry_plot(150, 6, 122.4, 0.9, 25000.0)
 
         fig.update_layout(
             xaxis_title="Design variable",
