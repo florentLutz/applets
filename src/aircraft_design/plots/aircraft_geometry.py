@@ -18,6 +18,10 @@ class AircraftGeometry:
     front_length: float = field(default=None)
     cabin_length: float = field(default=None)
     fuselage_width: float = field(default=None)
+    fuselage_length: float = field(default=None)
+    rear_length: float = field(default=None)
+    fa_length: float = field(default=None)
+    mac_length: float = field(default=None)
 
 
 def aircraft_geometry_plot(
@@ -43,6 +47,7 @@ def aircraft_geometry_plot(
 
     aircraft_data = AircraftGeometry()
 
+    # Fuselage
     fuselage_trace_x, fuselage_trace_y = _fuselage_trace(
         npax, npax_per_row, aircraft_data
     )
@@ -58,6 +63,7 @@ def aircraft_geometry_plot(
         )
     )
 
+    # Wing
     left_wing_trace_x, left_wing_trace_y = _wing_trace(wing_area, aircraft_data)
 
     fig.add_trace(
@@ -78,6 +84,29 @@ def aircraft_geometry_plot(
             showlegend=False,
         )
     )
+
+    # HTP
+    left_htp_trace_x, left_htp_trace_y = _htp_trace(wing_area, htp_volume_coefficient, aircraft_data)
+
+    fig.add_trace(
+        go.Scatter(
+            x=left_htp_trace_y,
+            y=left_htp_trace_x,
+            mode="lines",
+            line={"color": "black", "width": 5},
+            showlegend=False,
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=-left_htp_trace_y,
+            y=left_htp_trace_x,
+            mode="lines",
+            line={"color": "black", "width": 5},
+            showlegend=False,
+        )
+    )
+
 
     a320_top_view = Image.open(
         pathlib.Path(__file__).parent / "resources" / "Airbus_A320.png"
@@ -151,7 +180,9 @@ def _fuselage_trace(
     fuselage_height = fuselage_width / 2.0 + 0.14
     aircraft.cabin_length = cabin_length = seat_length * n_rows
     aircraft.front_length = front_length = 1.7 * fuselage_height
-    rear_length = 4.75 * fuselage_height
+    aircraft.rear_length = rear_length = 4.75 * fuselage_height
+
+    aircraft.fuselage_length = front_length + cabin_length + rear_length
 
     fuselage_trace_x = np.array([])
     fuselage_trace_y = np.array([])
@@ -191,7 +222,7 @@ def _fuselage_trace(
     fuselage_trace_x = np.concatenate((fuselage_trace_x, -front_length - nose_x))
     fuselage_trace_y = np.concatenate((fuselage_trace_y, -np.flip(nose_y)))
 
-    return (fuselage_trace_x, fuselage_trace_y)
+    return fuselage_trace_x, fuselage_trace_y
 
 
 def _rear_cone_trace(
@@ -229,8 +260,11 @@ def _wing_trace(
     taper_ratio = 0.240
     kink_ratio = 0.4
 
-    fa_length = aircraft.front_length + 0.46 * aircraft.cabin_length
+    aircraft.fa_length = fa_length = (
+        aircraft.front_length + 0.46 * aircraft.cabin_length
+    )
     span = np.sqrt(aspect_ratio * wing_area)
+    aircraft.mac_length = 1.25 * wing_area / span # A few tweaks are required here and there
 
     root_chord = 2.0 * wing_area / span / (1.0 + taper_ratio)
     tip_chord = root_chord * taper_ratio
@@ -260,4 +294,69 @@ def _wing_trace(
         ]
     )
 
-    return (left_wing_trace_x, left_wing_trace_y)
+    return left_wing_trace_x, left_wing_trace_y
+
+
+def _htp_trace(
+    wing_area: float, htp_volume_coefficient, aircraft: AircraftGeometry
+) -> (np.ndarray, np.ndarray):
+    """
+    Returns a figure plot of the top view of the HTP.
+
+    :param wing_area: area of the wing
+    :param htp_volume_coefficient: volume coefficient of the HTP
+    :param aircraft: AircraftGeometry object used to pass locally computed information about the
+                    aircraft
+    :return: HTP plot figure as a set of x and y coordinates
+    """
+
+    htp_aspect_ratio = 5.5
+    sweep_angle = 29.0 * np.pi / 180.0
+    taper_ratio = 0.256
+
+    htp_lever_arm = aircraft.fuselage_length * 0.80 - aircraft.fa_length
+    htp_area = htp_volume_coefficient * wing_area * aircraft.mac_length / htp_lever_arm
+    htp_span = np.sqrt(htp_area * htp_aspect_ratio)
+
+    # Length between nose and htp aerodynamic center position
+    htp_fa_length = 0.89 * aircraft.fuselage_length
+
+    root_chord = 2.0 * htp_area / htp_span / (1.0 + taper_ratio)
+    tip_chord = root_chord * taper_ratio
+    root_chord_leading_edge_x = htp_fa_length - 0.25 * root_chord
+    tip_chord_leading_edge_x = (
+        htp_fa_length
+        + htp_span / 2.0 * np.sin(sweep_angle)
+        - 0.25 * tip_chord
+    )
+
+    left_htp_trace_x = -np.array(
+        [
+            root_chord_leading_edge_x,
+            tip_chord_leading_edge_x,
+            tip_chord_leading_edge_x + tip_chord,
+            root_chord_leading_edge_x + root_chord,
+        ]
+    )
+    htp_root_le_wrt_con_start = (
+        root_chord_leading_edge_x - aircraft.front_length - aircraft.cabin_length
+    )
+    htp_root_te_wrt_con_start = htp_root_le_wrt_con_start + root_chord
+    left_htp_trace_y = np.array(
+        [
+            _rear_cone_trace(
+                aircraft.fuselage_width,
+                aircraft.rear_length,
+                np.array([htp_root_le_wrt_con_start]),
+            ).item(),
+            -htp_span / 2.0,
+            -htp_span / 2.0,
+            _rear_cone_trace(
+                aircraft.fuselage_width,
+                aircraft.rear_length,
+                np.array([htp_root_te_wrt_con_start]),
+            ).item(),
+        ]
+    )
+
+    return left_htp_trace_x, left_htp_trace_y
