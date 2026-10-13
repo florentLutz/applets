@@ -13,6 +13,10 @@ if __name__ == "__main__":
 
     st.title("✈️ Aircraft Design")
 
+    # Initialize checkpoints, should only trigger at the beginning of session
+    if "checkpoint_1" not in st.session_state:
+        st.session_state.checkpoint_1 = False
+
     # ============================================================
     # SIDEBAR — DESIGN PARAMETERS
     # ============================================================
@@ -20,14 +24,14 @@ if __name__ == "__main__":
     with st.sidebar:
         st.header("Analysis")
 
+        radio_options = ["Overview"]
+
+        if st.session_state.checkpoint_1:
+            radio_options.append("Constraints diagram")
+
         page = st.radio(
             "Select discipline",
-            [
-                "Overview",
-                "Aerodynamics",
-                "Propulsion",
-                "Weights",
-            ],
+            radio_options,
         )
 
     with st.sidebar:
@@ -39,31 +43,30 @@ if __name__ == "__main__":
             # --------------------------------------------------------
             # Aerodynamics
             # --------------------------------------------------------
+            st.subheader("Geometry")
 
-            with st.expander("Geometry", expanded=True):
-                npax_per_row = st.slider(
-                    "Number of passengers per row",
-                    min_value=3,
-                    max_value=10,
-                    value=4,
-                    step=1,
-                )
+            npax_per_row = st.slider(
+                "Number of passengers per row",
+                min_value=3,
+                max_value=10,
+                value=4,
+                step=1,
+            )
+            npax = st.slider(
+                "Number of passengers",
+                min_value=10 * npax_per_row,
+                max_value=100 * npax_per_row,
+                value=20 * npax_per_row,
+                step=npax_per_row,
+            )
 
-                npax = st.slider(
-                    "Number of passengers",
-                    min_value=10 * npax_per_row,
-                    max_value=100 * npax_per_row,
-                    value=20 * npax_per_row,
-                    step=npax_per_row,
-                )
+            # Faire avec un on_change pour être sûr ?
+            def _change_checkpoint_1():
+                st.session_state.checkpoint_1 = not st.session_state.checkpoint_1
 
-                wing_area = st.slider(
-                    "Wing area [m²]",
-                    min_value=50.0,
-                    max_value=300.0,
-                    value=150.0,
-                    step=5.0,
-                )
+            st.checkbox(
+                "Fuselage done", key="Fuselage_done", on_change=_change_checkpoint_1
+            )
 
             # --------------------------------------------------------
             # Propulsion

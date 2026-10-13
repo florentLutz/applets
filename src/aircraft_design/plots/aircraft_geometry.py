@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 import plotly.graph_objects as go
+import streamlit as st
 from PIL import Image
 
 
@@ -27,6 +28,7 @@ class AircraftGeometry:
     wing_tip_leading_edge_x: float = field(default=None)
 
 
+@st.cache_data
 def aircraft_geometry_plot(
     npax: int,
     npax_per_row: int,
@@ -206,6 +208,7 @@ def aircraft_geometry_plot(
     return fig
 
 
+@st.cache_data
 def _fuselage_trace(
     npax: int, npax_per_row: int, aircraft: AircraftGeometry
 ) -> (np.ndarray, np.ndarray):
@@ -283,6 +286,7 @@ def _fuselage_trace(
     return fuselage_trace_x, fuselage_trace_y
 
 
+@st.cache_data
 def _rear_cone_trace(
     fuselage_width: float, rear_cone_length: float, rear_cone_x: np.ndarray
 ) -> np.ndarray:
@@ -301,6 +305,7 @@ def _rear_cone_trace(
     )
 
 
+@st.cache_data
 def _wing_trace(
     wing_area: float, aircraft: AircraftGeometry
 ) -> (np.ndarray, np.ndarray):
@@ -359,6 +364,7 @@ def _wing_trace(
     return left_wing_trace_x, left_wing_trace_y
 
 
+@st.cache_data
 def _htp_trace(
     wing_area: float, htp_volume_coefficient, aircraft: AircraftGeometry
 ) -> (np.ndarray, np.ndarray):
@@ -422,6 +428,7 @@ def _htp_trace(
     return left_htp_trace_x, left_htp_trace_y
 
 
+@st.cache_data
 def _vtp_trace(
     wing_area: float, vtp_volume_coefficient: float, aircraft: AircraftGeometry
 ) -> (np.ndarray, np.ndarray):
@@ -462,6 +469,7 @@ def _vtp_trace(
     return -vtp_x_absolute, vtp_y_adim * root_chord
 
 
+@st.cache_data
 def _nacelle_trace(
     mto_thrust: float, aircraft: AircraftGeometry
 ) -> (np.ndarray, np.ndarray):
