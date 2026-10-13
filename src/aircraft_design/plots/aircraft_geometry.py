@@ -1,9 +1,9 @@
 import pathlib
+from dataclasses import dataclass, field
 
 import numpy as np
 import plotly.graph_objects as go
 from PIL import Image
-from dataclasses import dataclass, field
 
 
 @dataclass
@@ -23,6 +23,8 @@ class AircraftGeometry:
     fa_length: float = field(default=None)
     mac_length: float = field(default=None)
     wing_span: float = field(default=None)
+    wing_root_leading_edge_x: float = field(default=None)
+    wing_tip_leading_edge_x: float = field(default=None)
 
 
 def aircraft_geometry_plot(
@@ -44,7 +46,7 @@ def aircraft_geometry_plot(
     :param wing_area: area of the wing
     :param htp_volume_coefficient: volume coefficient of the HTP
     :param vtp_volume_coefficient: volume coefficient of the VTP
-    :param mto_thrust: thrust of one engine at sea level static
+    :param mto_thrust: total thrust at sea level static
     :return: wing plot figure
     """
 
@@ -130,6 +132,30 @@ def aircraft_geometry_plot(
         go.Scatter(
             x=-left_vtp_trace_y,
             y=left_vtp_trace_x,
+            mode="lines",
+            line={"color": "black", "width": 5},
+            showlegend=False,
+        )
+    )
+
+    # Nacelle
+    left_nacelle_trace_x, left_nacelle_trace_y = _nacelle_trace(
+        mto_thrust / 2.0, aircraft_data
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=left_nacelle_trace_y,
+            y=left_nacelle_trace_x,
+            mode="lines",
+            line={"color": "black", "width": 5},
+            showlegend=False,
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=-left_nacelle_trace_y,
+            y=left_nacelle_trace_x,
             mode="lines",
             line={"color": "black", "width": 5},
             showlegend=False,
@@ -298,8 +324,10 @@ def _wing_trace(
 
     root_chord = 2.0 * wing_area / span / (1.0 + taper_ratio)
     tip_chord = root_chord * taper_ratio
-    root_chord_leading_edge_x = fa_length - 0.25 * root_chord
-    tip_chord_leading_edge_x = (
+    aircraft.wing_root_leading_edge_x = root_chord_leading_edge_x = (
+        fa_length - 0.25 * root_chord
+    )
+    aircraft.wing_tip_leading_edge_x = tip_chord_leading_edge_x = (
         fa_length + span / 2.0 * np.sin(sweep_angle) - 0.25 * tip_chord
     )
 
@@ -391,7 +419,7 @@ def _htp_trace(
 
 
 def _vtp_trace(
-    wing_area: float, vtp_volume_coefficient, aircraft: AircraftGeometry
+    wing_area: float, vtp_volume_coefficient: float, aircraft: AircraftGeometry
 ) -> (np.ndarray, np.ndarray):
     """
     Returns a figure plot of the top view of the VTP.
@@ -409,7 +437,6 @@ def _vtp_trace(
     vtp_lever_arm = aircraft.fuselage_length * 0.85 - aircraft.fa_length
     vtp_area = vtp_volume_coefficient * wing_area * aircraft.wing_span / vtp_lever_arm
     htp_span = np.sqrt(vtp_area * vtp_aspect_ratio)
-    print(vtp_area)
 
     # Length between nose and htp aerodynamic center position
     vtp_fa_length = 0.825 * aircraft.fuselage_length
@@ -429,3 +456,59 @@ def _vtp_trace(
     vtp_x_absolute = vtp_fa_length - 0.25 * root_chord + vtp_x_adim * root_chord
 
     return -vtp_x_absolute, vtp_y_adim * root_chord
+
+
+def _nacelle_trace(
+    mto_thrust: float, aircraft: AircraftGeometry
+) -> (np.ndarray, np.ndarray):
+    """
+    Returns a figure plot of the top view of the nacele.
+
+    :param mto_thrust: nominal thrust of 1 engine in N
+    :param aircraft: AircraftGeometry object used to pass locally computed information about the
+                    aircraft
+    :return: nacelle plot figure as a set of x and y coordinates
+    """
+
+    mto_thrust_lbf = mto_thrust * 0.2248089431
+    mto_thrust_lbf_ref = 112.2e3 * 0.2248089431
+
+    nacelle_diameter = 0.9 * 2.37 * np.sqrt(mto_thrust_lbf / mto_thrust_lbf_ref)
+    nacelle_length = 0.85 * 4.44 * np.sqrt(mto_thrust_lbf / mto_thrust_lbf_ref)
+
+    # In the aircraft coordinate system
+    nacelle_center_y_coordinate = 0.338 * aircraft.wing_span / 2.0
+
+    # To facilitate, we will make it so that the center of the back of the nacelle will be on the
+    # wing
+    nacelle_start_x_coordinate = np.interp(
+        nacelle_center_y_coordinate,
+        [aircraft.fuselage_width / 2.0, aircraft.wing_span / 2.0],
+        [aircraft.wing_root_leading_edge_x, aircraft.wing_tip_leading_edge_x],
+    )
+    nacelle_end_x_coordinate = np.interp(
+        nacelle_center_y_coordinate - nacelle_diameter / 2.0,
+        [aircraft.fuselage_width / 2.0, aircraft.wing_span / 2.0],
+        [aircraft.wing_root_leading_edge_x, aircraft.wing_tip_leading_edge_x],
+    )
+
+    nacelle_trace_x = -np.array(
+        [
+            nacelle_start_x_coordinate,
+            nacelle_start_x_coordinate,
+            nacelle_start_x_coordinate - nacelle_length,
+            nacelle_start_x_coordinate - nacelle_length,
+            nacelle_end_x_coordinate,
+        ]
+    )
+    nacelle_trace_y = -np.array(
+        [
+            nacelle_center_y_coordinate,
+            nacelle_center_y_coordinate + nacelle_diameter / 2.0,
+            nacelle_center_y_coordinate + nacelle_diameter / 2.0,
+            nacelle_center_y_coordinate - nacelle_diameter / 2.0,
+            nacelle_center_y_coordinate - nacelle_diameter / 2.0,
+        ]
+    )
+
+    return nacelle_trace_x, nacelle_trace_y
