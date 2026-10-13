@@ -34,6 +34,8 @@ def aircraft_geometry_plot(
     htp_volume_coefficient: float,
     vtp_volume_coefficient: float,
     mto_thrust: float,
+    *,
+    show_reference_aircraft: bool = False,
 ) -> go.Figure:
     """
     Returns a figure plot of the top view of the wing.
@@ -47,6 +49,7 @@ def aircraft_geometry_plot(
     :param htp_volume_coefficient: volume coefficient of the HTP
     :param vtp_volume_coefficient: volume coefficient of the VTP
     :param mto_thrust: total thrust at sea level static
+    :param show_reference_aircraft: show the outline of the reference aircraft for comparison
     :return: wing plot figure
     """
 
@@ -167,26 +170,25 @@ def aircraft_geometry_plot(
     )
 
     span_actual_a320 = 35.80
-    length_actual_a320 = (
-        39.38  # Not actually true, more 37.57, but if we don't do that the picture
-    )
-    # appears squished
-    fig.add_layout_image(
-        {
-            "source": a320_top_view,
-            "xref": "x",
-            "yref": "y",
-            "x": 0.0,
-            "y": 0.0,
-            "sizey": length_actual_a320,
-            "sizex": span_actual_a320,
-            "sizing": "stretch",
-            "opacity": 0.75,
-            "layer": "below",
-            "xanchor": "center",
-            "yanchor": "top",
-        }
-    )
+    length_actual_a320 = 39.38
+    # Not actually true, more 37.57, but if we don't do that the picture appears squished
+    if show_reference_aircraft:
+        fig.add_layout_image(
+            {
+                "source": a320_top_view,
+                "xref": "x",
+                "yref": "y",
+                "x": 0.0,
+                "y": 0.0,
+                "sizey": length_actual_a320,
+                "sizex": span_actual_a320,
+                "sizing": "stretch",
+                "opacity": 0.75,
+                "layer": "below",
+                "xanchor": "center",
+                "yanchor": "top",
+            }
+        )
     fig.update_layout(
         plot_bgcolor="white",
         paper_bgcolor="white",

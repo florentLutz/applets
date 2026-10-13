@@ -133,8 +133,13 @@ if __name__ == "__main__":
     # ============================================================
     # The right numbers we should get is npax=150, 6 pax per rows, wing_area=122.4
     if page == "Overview":
+
+        show_reference_aircraft = st.checkbox(
+            "Show reference aircraft outline",
+            key="ref_aircraft_outline",
+        )
         fig = plot_library.aircraft_geometry_plot(
-            150, 6, 122.4, 1.0, 0.09, 2.0 * 111.2e3
+            150, 6, 122.4, 1.0, 0.09, 2.0 * 111.2e3, show_reference_aircraft=show_reference_aircraft
         )
 
         fig.update_layout(
