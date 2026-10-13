@@ -198,8 +198,10 @@ def aircraft_geometry_plot(
         width=800,
     )
     # This should make it so that it is always centered on the trace
-    fig.update_xaxes(range=[-span_actual_a320 / 2.0, +span_actual_a320 / 2.0])
-    fig.update_yaxes(range=[0.0, -length_actual_a320].sort())
+    fig.update_xaxes(
+        range=[-span_actual_a320 * 1.05 / 2.0, span_actual_a320 * 1.05 / 2.0]
+    )
+    fig.update_yaxes(range=[0.0, -length_actual_a320 * 1.05].sort())
 
     return fig
 

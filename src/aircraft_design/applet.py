@@ -40,21 +40,21 @@ if __name__ == "__main__":
             # Aerodynamics
             # --------------------------------------------------------
 
-            with st.expander("🌬️ Aerodynamics", expanded=True):
-                aspect_ratio = st.slider(
-                    "Wing aspect ratio",
-                    min_value=5.0,
-                    max_value=15.0,
-                    value=9.0,
-                    step=0.1,
+            with st.expander("Geometry", expanded=True):
+                npax_per_row = st.slider(
+                    "Number of passengers per row",
+                    min_value=3,
+                    max_value=10,
+                    value=4,
+                    step=1,
                 )
 
-                sweep = st.slider(
-                    "Wing sweep [deg]",
-                    min_value=0.0,
-                    max_value=45.0,
-                    value=25.0,
-                    step=1.0,
+                npax = st.slider(
+                    "Number of passengers",
+                    min_value=10 * npax_per_row,
+                    max_value=100 * npax_per_row,
+                    value=20 * npax_per_row,
+                    step=npax_per_row,
                 )
 
                 wing_area = st.slider(
@@ -133,13 +133,19 @@ if __name__ == "__main__":
     # ============================================================
     # The right numbers we should get is npax=150, 6 pax per rows, wing_area=122.4
     if page == "Overview":
-
         show_reference_aircraft = st.checkbox(
             "Show reference aircraft outline",
             key="ref_aircraft_outline",
         )
+        # "Right answers" should be here, 150, 6, 122.4, 1.0, 0.09 and 2.0 * 111.2e3
         fig = plot_library.aircraft_geometry_plot(
-            150, 6, 122.4, 1.0, 0.09, 2.0 * 111.2e3, show_reference_aircraft=show_reference_aircraft
+            npax=npax,
+            npax_per_row=npax_per_row,
+            wing_area=122.4,
+            htp_volume_coefficient=1.0,
+            vtp_volume_coefficient=0.09,
+            mto_thrust=2.0 * 111.2e3,
+            show_reference_aircraft=show_reference_aircraft,
         )
 
         fig.update_layout(
@@ -181,7 +187,7 @@ if __name__ == "__main__":
 
             st.metric(
                 label="Aspect ratio",
-                value=f"{aspect_ratio:.1f}",
+                value=f"{10.0:.1f}",
             )
 
             st.metric(
