@@ -22,6 +22,7 @@ class AircraftGeometry:
     rear_length: float = field(default=None)
     fa_length: float = field(default=None)
     mac_length: float = field(default=None)
+    wing_span: float = field(default=None)
 
 
 def aircraft_geometry_plot(
@@ -29,6 +30,7 @@ def aircraft_geometry_plot(
     npax_per_row: int,
     wing_area: float,
     htp_volume_coefficient: float,
+    vtp_volume_coefficient: float,
     mto_thrust: float,
 ) -> go.Figure:
     """
@@ -40,7 +42,8 @@ def aircraft_geometry_plot(
                 npax_per_row
     :param npax_per_row: number of passenger in a row cabin
     :param wing_area: area of the wing
-    :param htp_volume_coefficient: volume coefficient of the htp
+    :param htp_volume_coefficient: volume coefficient of the HTP
+    :param vtp_volume_coefficient: volume coefficient of the VTP
     :param mto_thrust: thrust of one engine at sea level static
     :return: wing plot figure
     """
@@ -86,7 +89,9 @@ def aircraft_geometry_plot(
     )
 
     # HTP
-    left_htp_trace_x, left_htp_trace_y = _htp_trace(wing_area, htp_volume_coefficient, aircraft_data)
+    left_htp_trace_x, left_htp_trace_y = _htp_trace(
+        wing_area, htp_volume_coefficient, aircraft_data
+    )
 
     fig.add_trace(
         go.Scatter(
@@ -107,6 +112,29 @@ def aircraft_geometry_plot(
         )
     )
 
+    # VTP
+    left_vtp_trace_x, left_vtp_trace_y = _vtp_trace(
+        wing_area, vtp_volume_coefficient, aircraft_data
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=left_vtp_trace_y,
+            y=left_vtp_trace_x,
+            mode="lines",
+            line={"color": "black", "width": 5},
+            showlegend=False,
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=-left_vtp_trace_y,
+            y=left_vtp_trace_x,
+            mode="lines",
+            line={"color": "black", "width": 5},
+            showlegend=False,
+        )
+    )
 
     a320_top_view = Image.open(
         pathlib.Path(__file__).parent / "resources" / "Airbus_A320.png"
@@ -263,8 +291,10 @@ def _wing_trace(
     aircraft.fa_length = fa_length = (
         aircraft.front_length + 0.46 * aircraft.cabin_length
     )
-    span = np.sqrt(aspect_ratio * wing_area)
-    aircraft.mac_length = 1.25 * wing_area / span # A few tweaks are required here and there
+    aircraft.wing_span = span = np.sqrt(aspect_ratio * wing_area)
+    aircraft.mac_length = (
+        1.25 * wing_area / span
+    )  # A few tweaks are required here and there
 
     root_chord = 2.0 * wing_area / span / (1.0 + taper_ratio)
     tip_chord = root_chord * taper_ratio
@@ -314,7 +344,7 @@ def _htp_trace(
     sweep_angle = 29.0 * np.pi / 180.0
     taper_ratio = 0.256
 
-    htp_lever_arm = aircraft.fuselage_length * 0.80 - aircraft.fa_length
+    htp_lever_arm = aircraft.fuselage_length * 0.85 - aircraft.fa_length
     htp_area = htp_volume_coefficient * wing_area * aircraft.mac_length / htp_lever_arm
     htp_span = np.sqrt(htp_area * htp_aspect_ratio)
 
@@ -325,9 +355,7 @@ def _htp_trace(
     tip_chord = root_chord * taper_ratio
     root_chord_leading_edge_x = htp_fa_length - 0.25 * root_chord
     tip_chord_leading_edge_x = (
-        htp_fa_length
-        + htp_span / 2.0 * np.sin(sweep_angle)
-        - 0.25 * tip_chord
+        htp_fa_length + htp_span / 2.0 * np.sin(sweep_angle) - 0.25 * tip_chord
     )
 
     left_htp_trace_x = -np.array(
@@ -360,3 +388,44 @@ def _htp_trace(
     )
 
     return left_htp_trace_x, left_htp_trace_y
+
+
+def _vtp_trace(
+    wing_area: float, vtp_volume_coefficient, aircraft: AircraftGeometry
+) -> (np.ndarray, np.ndarray):
+    """
+    Returns a figure plot of the top view of the VTP.
+
+    :param wing_area: area of the wing
+    :param vtp_volume_coefficient: volume coefficient of the VTP
+    :param aircraft: AircraftGeometry object used to pass locally computed information about the
+                    aircraft
+    :return: VTP plot figure as a set of x and y coordinates
+    """
+
+    vtp_aspect_ratio = 1.82
+    taper_ratio = 0.303
+
+    vtp_lever_arm = aircraft.fuselage_length * 0.85 - aircraft.fa_length
+    vtp_area = vtp_volume_coefficient * wing_area * aircraft.wing_span / vtp_lever_arm
+    htp_span = np.sqrt(vtp_area * vtp_aspect_ratio)
+    print(vtp_area)
+
+    # Length between nose and htp aerodynamic center position
+    vtp_fa_length = 0.825 * aircraft.fuselage_length
+
+    root_chord = 4.0 * vtp_area / htp_span / (1.0 + taper_ratio)
+
+    vtp_x_adim = np.linspace(0, 1, 50)
+    # Equation for NACA0012 modified a bit
+    vtp_y_adim = -0.3 * (
+        0.298222773 * np.sqrt(vtp_x_adim)
+        - 0.127125232 * vtp_x_adim
+        - 0.357907906 * vtp_x_adim**2.0
+        + 0.291984971 * vtp_x_adim**3.0
+        - 0.105174606 * vtp_x_adim**4.0
+    )
+
+    vtp_x_absolute = vtp_fa_length - 0.25 * root_chord + vtp_x_adim * root_chord
+
+    return -vtp_x_absolute, vtp_y_adim * root_chord
