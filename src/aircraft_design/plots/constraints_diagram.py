@@ -47,6 +47,18 @@ def constraints_diagram(
         line_dash="dash",
         line_width=2,
     )
+    fig.add_trace(
+        go.Scatter(
+            x=[0, 1],
+            y=[0.01, 0.01],
+            mode="lines",
+            line={"color": "rgba(150, 150, 150, 1.0)", "width": 2, "dash": "dash"},
+            fill="tozeroy",
+            fillcolor="rgba(150, 150, 150, 0.1)",
+            name="Landing constraint",
+            showlegend=True
+        ),
+    )
 
     # Takeoff constraint
     takeoff_constraint_thrust_loading = _takeoff_constraint(tofl, wing_loading)
@@ -58,7 +70,9 @@ def constraints_diagram(
             line={"color": "rgba(0, 0, 255, 1.0)", "width": 2},
             fill="tozeroy",
             fillcolor="rgba(0, 0, 255, 0.10)",
-        )
+            name="Takeoff constraint",
+            showlegend=True
+        ),
     )
 
     fig.update_layout(
