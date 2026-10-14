@@ -55,7 +55,10 @@ def aircraft_geometry_plot(
     :return: wing plot figure
     """
 
-    aircraft_data = AircraftGeometry()
+    if "aircraft_data" not in st.session_state:
+        st.session_state.aircraft_data = aircraft_data = AircraftGeometry()
+    else:
+        aircraft_data = st.session_state.aircraft_data
 
     # Fuselage
     fuselage_trace_x, fuselage_trace_y = _fuselage_trace(
