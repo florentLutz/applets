@@ -89,6 +89,13 @@ if __name__ == "__main__":
                 value=2000,
                 step=10,
             )
+            rate_of_climb = st.slider(
+                "Rate of climb [ft/min]",
+                min_value=1500,
+                max_value=5000,
+                value=2000,
+                step=100,
+            )
 
     # ============================================================
     # CALCULATION
@@ -165,6 +172,7 @@ if __name__ == "__main__":
             stall_speed=approach_speed
             / 1.22,  # Classic ratio between approach and stall speed,
             tofl=tofl,
+            rate_of_climb=rate_of_climb,
         )
 
         constraint_diagram.update_layout(
