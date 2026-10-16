@@ -17,6 +17,12 @@ if __name__ == "__main__":
     if "checkpoint_1" not in st.session_state:
         st.session_state.checkpoint_1 = False
 
+    if "checkpoint_2" not in st.session_state:
+        st.session_state.checkpoint_2 = False
+
+    if "MTOW" not in st.session_state:
+        st.session_state.mtow = 100e3
+
     # ============================================================
     # SIDEBAR — DESIGN PARAMETERS
     # ============================================================
@@ -60,7 +66,6 @@ if __name__ == "__main__":
                 step=npax_per_row,
             )
 
-            # Faire avec un on_change pour être sûr ?
             def _change_checkpoint_1():
                 st.session_state.checkpoint_1 = not st.session_state.checkpoint_1
 
@@ -95,6 +100,13 @@ if __name__ == "__main__":
                 max_value=5000,
                 value=2000,
                 step=100,
+            )
+            cruise_mach = st.slider(
+                "Cruise Mach number [-]",
+                min_value=0.7,
+                max_value=0.82,
+                value=0.75,
+                step=0.01,
             )
 
     # ============================================================
@@ -144,16 +156,20 @@ if __name__ == "__main__":
         with col_fom:
             st.subheader("Figures of merit")
 
-            st.metric(
-                label="Aspect ratio",
-                value=f"{10.0:.1f}",
-            )
-
-            st.metric(
-                label="Wing loading",
-                value="—",
-                help="To be calculated",
-            )
+            if not st.session_state.checkpoint_2:
+                st.metric(
+                    label="MTOW",
+                    value="—",
+                )
+            else:
+                result, init_guess_warning = st.columns([1,1])
+                with result:
+                    st.metric(
+                        label="MTOW",
+                        value=str(st.session_state.mtow),
+                    )
+                with init_guess_warning:
+                    st.caption("Initial guess")
 
             st.metric(
                 label="L/D",
@@ -168,11 +184,37 @@ if __name__ == "__main__":
             )
 
     if page == "Constraints diagram":
-        constraint_diagram = plot_library.constraints_diagram(
-            stall_speed=approach_speed
-            / 1.22,  # Classic ratio between approach and stall speed,
-            tofl=tofl,
-            rate_of_climb=rate_of_climb,
+        col_plot_constraints, col_point_validity = st.columns([2, 1])
+
+        with col_point_validity:
+            st.subheader("Design point selection")
+            wing_loading = st.number_input(
+                "Design wing loading [kg/m²]",
+                value=450.0,
+                placeholder="Type a number...",
+                min_value=100.0,
+                max_value=900.0,
+                step=1.0
+            )
+            thrust_loading = st.number_input(
+                "Design thrust loading [-]",
+                value=0.5,
+                placeholder="Type a number...",
+                min_value=0.0,
+                max_value=1.0,
+                step=0.01
+            )
+
+        constraint_diagram, respected_constraints, broken_constraints = (
+            plot_library.constraints_diagram(
+                stall_speed=approach_speed
+                / 1.22,  # Classic ratio between approach and stall speed,
+                tofl=tofl,
+                rate_of_climb=rate_of_climb,
+                cruise_mach=cruise_mach,
+                wing_loading_design=wing_loading,
+                thrust_loading_design=thrust_loading,
+            )
         )
 
         constraint_diagram.update_layout(
@@ -181,20 +223,23 @@ if __name__ == "__main__":
             margin={"l": 20, "r": 20, "t": 60, "b": 20},
         )
 
-        col_plot_constraints, col_point_validity = st.columns([2, 1])
-
-        # ============================================================
-        # LEFT — PLOT
-        # ============================================================
-
         with col_plot_constraints:
             st.subheader("Constraint diagram")
 
             st.plotly_chart(constraint_diagram, width="stretch")
 
-        # ============================================================
-        # RIGHT — FIGURES OF MERIT
-        # ============================================================
-
         with col_point_validity:
-            pass
+            st.subheader("Validated constraints")
+
+            for constraint in respected_constraints:
+                st.write(constraint)
+
+            st.subheader("Broken constraints")
+
+            for constraint in broken_constraints:
+                st.write(constraint)
+
+        if st.session_state.checkpoint_1 and not broken_constraints:
+            st.session_state.checkpoint_2 = True
+        else:
+            st.session_state.checkpoint_2 = False
