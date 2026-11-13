@@ -1,6 +1,12 @@
 import plots as plot_library
 import streamlit as st
 
+DEFAULT_MTOW = 100e3
+DEFAULT_WING_LOADING = 250
+DEFAULT_THRUST_LOADING = 0.5
+DEFAULT_HTP_VOLUME_COEFFICIENT = 0.5
+DEFAULT_VTP_VOLUME_COEFFICIENT = 0.02
+
 # ============================================================
 # CONFIGURATION
 # ============================================================
@@ -21,7 +27,21 @@ if __name__ == "__main__":
         st.session_state.checkpoint_2 = False
 
     if "MTOW" not in st.session_state:
-        st.session_state.mtow = 100e3
+        st.session_state.mtow = DEFAULT_MTOW
+
+    if "wing_loading" not in st.session_state:
+        st.session_state.wing_loading = DEFAULT_WING_LOADING  # Initialize at an obviously wrong
+        # value for comic effect, in kg/m2
+
+    if "thrust_loading" not in st.session_state:
+        st.session_state.thrust_loading = DEFAULT_THRUST_LOADING  # Same, in no units
+
+    if "htp_vol_coeff" not in st.session_state:
+        st.session_state.htp_vol_coeff = DEFAULT_HTP_VOLUME_COEFFICIENT  # Same, in no units
+
+    if "vtp_vol_coeff" not in st.session_state:
+        st.session_state.vtp_vol_coeff = DEFAULT_VTP_VOLUME_COEFFICIENT  # Same, in no units
+
 
     # ============================================================
     # SIDEBAR — DESIGN PARAMETERS
@@ -57,6 +77,8 @@ if __name__ == "__main__":
                 max_value=10,
                 value=4,
                 step=1,
+                persist_state="session",
+                key="npax_row"
             )
             npax = st.slider(
                 "Number of passengers [-]",
@@ -64,18 +86,38 @@ if __name__ == "__main__":
                 max_value=100 * npax_per_row,
                 value=20 * npax_per_row,
                 step=npax_per_row,
+                persist_state="session",
+                key="npax"
             )
 
             def _change_checkpoint_1():
                 st.session_state.checkpoint_1 = not st.session_state.checkpoint_1
 
-            st.checkbox(
-                "Fuselage done", key="Fuselage_done", on_change=_change_checkpoint_1
+            st.session_state.checkpoint_1 = st.checkbox(
+                "Fuselage done", key="Fuselage_done", on_change=_change_checkpoint_1, persist_state="session"
             )
 
-            # --------------------------------------------------------
-            # Propulsion
-            # --------------------------------------------------------
+            if st.session_state.checkpoint_2:
+                st.session_state.htp_vol_coeff = st.number_input(
+                    "HTP volume coefficient [-]",
+                    value=DEFAULT_HTP_VOLUME_COEFFICIENT,
+                    placeholder="Type a number...",
+                    min_value=0.1,
+                    max_value=1.1,
+                    step=0.01,
+                    persist_state="session",
+                    key="htp_vol_coeff_widget"
+                )
+                st.session_state.vtp_vol_coeff = st.number_input(
+                    "VTP volume coefficient [-]",
+                    value=DEFAULT_VTP_VOLUME_COEFFICIENT,
+                    placeholder="Type a number...",
+                    min_value=0.01,
+                    max_value=0.12,
+                    step=0.01,
+                    persist_state="session",
+                    key="vtp_vol_coeff_widget"
+                )
 
         elif page == "Constraints diagram":
             st.header("Operational requirements")
@@ -86,6 +128,8 @@ if __name__ == "__main__":
                 max_value=200,
                 value=145,
                 step=1,
+                persist_state="session",
+                key="vapp_cons"
             )
             tofl = st.slider(
                 "Takeoff Field Length [m]",
@@ -93,6 +137,8 @@ if __name__ == "__main__":
                 max_value=3500,
                 value=2000,
                 step=10,
+                persist_state="session",
+                key="tofl_cons"
             )
             rate_of_climb = st.slider(
                 "Rate of climb [ft/min]",
@@ -100,6 +146,8 @@ if __name__ == "__main__":
                 max_value=5000,
                 value=2000,
                 step=100,
+                persist_state="session",
+                key="roc_cons"
             )
             cruise_mach = st.slider(
                 "Cruise Mach number [-]",
@@ -107,6 +155,8 @@ if __name__ == "__main__":
                 max_value=0.82,
                 value=0.75,
                 step=0.01,
+                persist_state="session",
+                key="m_cons"
             )
 
     # ============================================================
@@ -122,10 +172,10 @@ if __name__ == "__main__":
         fig = plot_library.aircraft_geometry_plot(
             npax=npax,
             npax_per_row=npax_per_row,
-            wing_area=122.4,
-            htp_volume_coefficient=1.0,
-            vtp_volume_coefficient=0.09,
-            mto_thrust=2.0 * 111.2e3,
+            wing_area=st.session_state.mtow / st.session_state.wing_loading,
+            htp_volume_coefficient=st.session_state.htp_vol_coeff,
+            vtp_volume_coefficient=st.session_state.vtp_vol_coeff,
+            mto_thrust=st.session_state.mtow * 9.81 * st.session_state.thrust_loading,
             show_reference_aircraft=show_reference_aircraft,
         )
 
@@ -171,6 +221,16 @@ if __name__ == "__main__":
                 with init_guess_warning:
                     st.caption("Initial guess")
 
+                st.metric(
+                    label="Wing loading [kg/m²]",
+                    value=str(st.session_state.wing_loading),
+                )
+
+                st.metric(
+                    label="Thrust loading [-]",
+                    value=str(st.session_state.thrust_loading),
+                )
+
             st.metric(
                 label="L/D",
                 value="—",
@@ -194,7 +254,9 @@ if __name__ == "__main__":
                 placeholder="Type a number...",
                 min_value=100.0,
                 max_value=900.0,
-                step=1.0
+                step=1.0,
+                persist_state="session",
+                key="wing_loading_widget"
             )
             thrust_loading = st.number_input(
                 "Design thrust loading [-]",
@@ -202,7 +264,9 @@ if __name__ == "__main__":
                 placeholder="Type a number...",
                 min_value=0.0,
                 max_value=1.0,
-                step=0.01
+                step=0.01,
+                persist_state="session",
+                key="thrust_loading_widget"
             )
 
         constraint_diagram, respected_constraints, broken_constraints = (
@@ -239,7 +303,12 @@ if __name__ == "__main__":
             for constraint in broken_constraints:
                 st.write(constraint)
 
+        # If the choice of constraint diagram is correct, we move on to the next step.
         if st.session_state.checkpoint_1 and not broken_constraints:
             st.session_state.checkpoint_2 = True
+            st.session_state.wing_loading = wing_loading
+            st.session_state.thrust_loading = thrust_loading
         else:
             st.session_state.checkpoint_2 = False
+            st.session_state.wing_loading = DEFAULT_WING_LOADING
+            st.session_state.thrust_loading = DEFAULT_THRUST_LOADING
