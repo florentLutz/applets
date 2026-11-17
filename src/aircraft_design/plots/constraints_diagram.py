@@ -93,13 +93,8 @@ def constraints_diagram(
             mode="markers",
             x=[wing_loading_design],
             y=[thrust_loading_design],
-            marker={
-                "size": 20,
-                "color": "red",
-                "symbol": "star"
-
-            },
-            name="Design point"
+            marker={"size": 20, "color": "red", "symbol": "star"},
+            name="Design point",
         )
     )
 

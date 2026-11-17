@@ -12,20 +12,28 @@ class AircraftGeometry:
     """
     Class used as a way to handily pass information on the aircraft computed by drawing function. To
     avoid overloading, only information required in multiple drawing functions should be added. Also
-    as this dataclass does not provide default value, the order in which the function are called
-    will matter to avoid error
+    as this dataclass does not provide default value for anything that is computed, the order in
+    which the function are called will matter to avoid error
     """
 
     front_length: float = field(default=None)
     cabin_length: float = field(default=None)
     fuselage_width: float = field(default=None)
     fuselage_length: float = field(default=None)
+    fuselage_wetted_area: float = field(default=None)
     rear_length: float = field(default=None)
     fa_length: float = field(default=None)
     mac_length: float = field(default=None)
     wing_span: float = field(default=None)
+    wing_aspect_ratio: float = field(default=10.47)
+    wing_sweep_angle: float = field(default=23.0 * np.pi / 180.0)
+    wing_taper_ratio: float = field(default=0.240)
     wing_root_leading_edge_x: float = field(default=None)
     wing_tip_leading_edge_x: float = field(default=None)
+    htp_mean_chord: float = field(default=None)
+    htp_area: float = field(default=None)
+    vtp_mean_chord: float = field(default=None)
+    vtp_area: float = field(default=None)
 
 
 @st.cache_data
@@ -247,6 +255,9 @@ def _fuselage_trace(
     aircraft.rear_length = rear_length = 4.75 * fuselage_height
 
     aircraft.fuselage_length = front_length + cabin_length + rear_length
+    aircraft.fuselage_wetted_area = fuselage_width * (
+        2.45 * front_length + 3.1416 * cabin_length + 2.3 * rear_length
+    )
 
     fuselage_trace_x = np.array([])
     fuselage_trace_y = np.array([])
@@ -321,26 +332,23 @@ def _wing_trace(
     :return: wing plot figure as a set of x and y coordinates
     """
     # Wings.
-    aspect_ratio = 10.47
-    sweep_angle = 23.0 * np.pi / 180.0
-    taper_ratio = 0.240
     kink_ratio = 0.4
 
     aircraft.fa_length = fa_length = (
         aircraft.front_length + 0.46 * aircraft.cabin_length
     )
-    aircraft.wing_span = span = np.sqrt(aspect_ratio * wing_area)
+    aircraft.wing_span = span = np.sqrt(aircraft.wing_aspect_ratio * wing_area)
     aircraft.mac_length = (
         1.25 * wing_area / span
     )  # A few tweaks are required here and there
 
-    root_chord = 2.0 * wing_area / span / (1.0 + taper_ratio)
-    tip_chord = root_chord * taper_ratio
+    root_chord = 2.0 * wing_area / span / (1.0 + aircraft.wing_taper_ratio)
+    tip_chord = root_chord * aircraft.wing_taper_ratio
     aircraft.wing_root_leading_edge_x = root_chord_leading_edge_x = (
         fa_length - 0.25 * root_chord
     )
     aircraft.wing_tip_leading_edge_x = tip_chord_leading_edge_x = (
-        fa_length + span / 2.0 * np.sin(sweep_angle) - 0.25 * tip_chord
+        fa_length + span / 2.0 * np.sin(aircraft.wing_sweep_angle) - 0.25 * tip_chord
     )
 
     left_wing_trace_x = -np.array(
@@ -388,6 +396,8 @@ def _htp_trace(
     htp_lever_arm = aircraft.fuselage_length * 0.85 - aircraft.fa_length
     htp_area = htp_volume_coefficient * wing_area * aircraft.mac_length / htp_lever_arm
     htp_span = np.sqrt(htp_area * htp_aspect_ratio)
+    aircraft.htp_mean_chord = htp_area / htp_span
+    aircraft.htp_area = htp_area
 
     # Length between nose and htp aerodynamic center position
     htp_fa_length = 0.89 * aircraft.fuselage_length
@@ -449,13 +459,16 @@ def _vtp_trace(
     taper_ratio = 0.303
 
     vtp_lever_arm = aircraft.fuselage_length * 0.85 - aircraft.fa_length
-    vtp_area = vtp_volume_coefficient * wing_area * aircraft.wing_span / vtp_lever_arm
-    htp_span = np.sqrt(vtp_area * vtp_aspect_ratio)
+    aircraft.vtp_area = vtp_area = (
+        vtp_volume_coefficient * wing_area * aircraft.wing_span / vtp_lever_arm
+    )
+    vtp_span = np.sqrt(vtp_area * vtp_aspect_ratio)
+    aircraft.vtp_mean_chord = vtp_area / vtp_span
 
     # Length between nose and htp aerodynamic center position
     vtp_fa_length = 0.825 * aircraft.fuselage_length
 
-    root_chord = 4.0 * vtp_area / htp_span / (1.0 + taper_ratio)
+    root_chord = 4.0 * vtp_area / vtp_span / (1.0 + taper_ratio)
 
     vtp_x_adim = np.linspace(0, 1, 50)
     # Equation for NACA0012 modified a bit

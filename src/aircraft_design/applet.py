@@ -6,6 +6,7 @@ DEFAULT_WING_LOADING = 250
 DEFAULT_THRUST_LOADING = 0.5
 DEFAULT_HTP_VOLUME_COEFFICIENT = 0.5
 DEFAULT_VTP_VOLUME_COEFFICIENT = 0.02
+DEFAULT_LD_MAX = -1  # Won't be displayed but need to be recognizable
 
 # ============================================================
 # CONFIGURATION
@@ -30,18 +31,26 @@ if __name__ == "__main__":
         st.session_state.mtow = DEFAULT_MTOW
 
     if "wing_loading" not in st.session_state:
-        st.session_state.wing_loading = DEFAULT_WING_LOADING  # Initialize at an obviously wrong
+        st.session_state.wing_loading = (
+            DEFAULT_WING_LOADING  # Initialize at an obviously wrong
+        )
         # value for comic effect, in kg/m2
 
     if "thrust_loading" not in st.session_state:
         st.session_state.thrust_loading = DEFAULT_THRUST_LOADING  # Same, in no units
 
     if "htp_vol_coeff" not in st.session_state:
-        st.session_state.htp_vol_coeff = DEFAULT_HTP_VOLUME_COEFFICIENT  # Same, in no units
+        st.session_state.htp_vol_coeff = (
+            DEFAULT_HTP_VOLUME_COEFFICIENT  # Same, in no units
+        )
 
     if "vtp_vol_coeff" not in st.session_state:
-        st.session_state.vtp_vol_coeff = DEFAULT_VTP_VOLUME_COEFFICIENT  # Same, in no units
+        st.session_state.vtp_vol_coeff = (
+            DEFAULT_VTP_VOLUME_COEFFICIENT  # Same, in no units
+        )
 
+    if "l_d_max" not in st.session_state:
+        st.session_state.l_d_max = DEFAULT_LD_MAX
 
     # ============================================================
     # SIDEBAR — DESIGN PARAMETERS
@@ -52,12 +61,18 @@ if __name__ == "__main__":
 
         radio_options = ["Overview"]
 
+        # Should actually be added at the end so that if a widget changes and resets those
+        # they can be enabled after working once.
         if st.session_state.checkpoint_1:
             radio_options.append("Constraints diagram")
+        if st.session_state.checkpoint_2:
+            radio_options.append("Aerodynamics")
 
         page = st.radio(
             "Select discipline",
             radio_options,
+            persist_state="session",
+            key="radio_selection",
         )
 
     with st.sidebar:
@@ -78,7 +93,7 @@ if __name__ == "__main__":
                 value=4,
                 step=1,
                 persist_state="session",
-                key="npax_row"
+                key="npax_row",
             )
             npax = st.slider(
                 "Number of passengers [-]",
@@ -87,14 +102,17 @@ if __name__ == "__main__":
                 value=20 * npax_per_row,
                 step=npax_per_row,
                 persist_state="session",
-                key="npax"
+                key="npax",
             )
 
             def _change_checkpoint_1():
                 st.session_state.checkpoint_1 = not st.session_state.checkpoint_1
 
             st.session_state.checkpoint_1 = st.checkbox(
-                "Fuselage done", key="Fuselage_done", on_change=_change_checkpoint_1, persist_state="session"
+                "Fuselage done",
+                key="Fuselage_done",
+                on_change=_change_checkpoint_1,
+                persist_state="session",
             )
 
             if st.session_state.checkpoint_2:
@@ -106,7 +124,7 @@ if __name__ == "__main__":
                     max_value=1.1,
                     step=0.01,
                     persist_state="session",
-                    key="htp_vol_coeff_widget"
+                    key="htp_vol_coeff_widget",
                 )
                 st.session_state.vtp_vol_coeff = st.number_input(
                     "VTP volume coefficient [-]",
@@ -116,7 +134,7 @@ if __name__ == "__main__":
                     max_value=0.12,
                     step=0.01,
                     persist_state="session",
-                    key="vtp_vol_coeff_widget"
+                    key="vtp_vol_coeff_widget",
                 )
 
         elif page == "Constraints diagram":
@@ -129,7 +147,7 @@ if __name__ == "__main__":
                 value=145,
                 step=1,
                 persist_state="session",
-                key="vapp_cons"
+                key="vapp_cons",
             )
             tofl = st.slider(
                 "Takeoff Field Length [m]",
@@ -138,7 +156,7 @@ if __name__ == "__main__":
                 value=2000,
                 step=10,
                 persist_state="session",
-                key="tofl_cons"
+                key="tofl_cons",
             )
             rate_of_climb = st.slider(
                 "Rate of climb [ft/min]",
@@ -147,7 +165,7 @@ if __name__ == "__main__":
                 value=2000,
                 step=100,
                 persist_state="session",
-                key="roc_cons"
+                key="roc_cons",
             )
             cruise_mach = st.slider(
                 "Cruise Mach number [-]",
@@ -156,8 +174,11 @@ if __name__ == "__main__":
                 value=0.75,
                 step=0.01,
                 persist_state="session",
-                key="m_cons"
+                key="m_cons",
             )
+
+        # No specific sidebar for the aerodynamics, no options to choose from really, just to
+        # observe
 
     # ============================================================
     # CALCULATION
@@ -212,7 +233,7 @@ if __name__ == "__main__":
                     value="—",
                 )
             else:
-                result, init_guess_warning = st.columns([1,1])
+                result, init_guess_warning = st.columns([1, 1])
                 with result:
                     st.metric(
                         label="MTOW",
@@ -230,12 +251,18 @@ if __name__ == "__main__":
                     label="Thrust loading [-]",
                     value=str(st.session_state.thrust_loading),
                 )
-
-            st.metric(
-                label="L/D",
-                value="—",
-                help="To be calculated",
-            )
+            if st.session_state.l_d_max == DEFAULT_LD_MAX:
+                st.metric(
+                    label="L/D",
+                    value="—",
+                    help="To be calculated",
+                )
+            else:
+                st.metric(
+                    label="L/D",
+                    value=round(st.session_state.l_d_max, 2),
+                    help="Maximum lift over drag ratio",
+                )
 
             st.metric(
                 label="Range",
@@ -256,7 +283,7 @@ if __name__ == "__main__":
                 max_value=900.0,
                 step=1.0,
                 persist_state="session",
-                key="wing_loading_widget"
+                key="wing_loading_widget",
             )
             thrust_loading = st.number_input(
                 "Design thrust loading [-]",
@@ -266,7 +293,7 @@ if __name__ == "__main__":
                 max_value=1.0,
                 step=0.01,
                 persist_state="session",
-                key="thrust_loading_widget"
+                key="thrust_loading_widget",
             )
 
         constraint_diagram, respected_constraints, broken_constraints = (
@@ -312,3 +339,41 @@ if __name__ == "__main__":
             st.session_state.checkpoint_2 = False
             st.session_state.wing_loading = DEFAULT_WING_LOADING
             st.session_state.thrust_loading = DEFAULT_THRUST_LOADING
+
+    if page == "Aerodynamics":
+        fig, l_d_max = plot_library.aircraft_aerodynamic_polar_plot(
+            wing_area=st.session_state.mtow / st.session_state.wing_loading,
+        )
+
+        fig.update_layout(
+            xaxis_title="Drag coefficient Cd [-]",
+            yaxis_title="Lift coefficient Cl [-]",
+            margin={"l": 20, "r": 20, "t": 60, "b": 20},
+        )
+
+        # ============================================================
+        # MAIN LAYOUT
+        # ============================================================
+        col_plot, col_fom = st.columns([2, 1])
+
+        # ============================================================
+        # LEFT — PLOT
+        # ============================================================
+
+        with col_plot:
+            st.subheader("Aircraft aerodynamics")
+
+            st.plotly_chart(fig, width="stretch")
+
+        # ============================================================
+        # RIGHT — FIGURES OF MERIT
+        # ============================================================
+
+        with col_fom:
+            st.subheader("Figures of merit")
+            st.session_state.l_d_max = l_d_max
+            st.metric(
+                label="L/D",
+                value=round(st.session_state.l_d_max, 2),
+                help="Maximum lift over drag ratio",
+            )
