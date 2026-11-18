@@ -31,6 +31,7 @@ class AircraftGeometry:
     wing_root_leading_edge_x: float = field(default=None)
     wing_tip_leading_edge_x: float = field(default=None)
     htp_mean_chord: float = field(default=None)
+    htp_lever_arm: float = field(default=None)
     htp_area: float = field(default=None)
     vtp_mean_chord: float = field(default=None)
     vtp_area: float = field(default=None)
@@ -393,11 +394,14 @@ def _htp_trace(
     sweep_angle = 29.0 * np.pi / 180.0
     taper_ratio = 0.256
 
-    htp_lever_arm = aircraft.fuselage_length * 0.85 - aircraft.fa_length
-    htp_area = htp_volume_coefficient * wing_area * aircraft.mac_length / htp_lever_arm
+    aircraft.htp_lever_arm = htp_lever_arm = (
+        aircraft.fuselage_length * 0.85 - aircraft.fa_length
+    )
+    aircraft.htp_area = htp_area = (
+        htp_volume_coefficient * wing_area * aircraft.mac_length / htp_lever_arm
+    )
     htp_span = np.sqrt(htp_area * htp_aspect_ratio)
     aircraft.htp_mean_chord = htp_area / htp_span
-    aircraft.htp_area = htp_area
 
     # Length between nose and htp aerodynamic center position
     htp_fa_length = 0.89 * aircraft.fuselage_length

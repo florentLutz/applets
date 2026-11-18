@@ -27,6 +27,9 @@ if __name__ == "__main__":
     if "checkpoint_2" not in st.session_state:
         st.session_state.checkpoint_2 = False
 
+    if "checkpoint_3" not in st.session_state:
+        st.session_state.checkpoint_3 = False
+
     if "MTOW" not in st.session_state:
         st.session_state.mtow = DEFAULT_MTOW
 
@@ -67,6 +70,8 @@ if __name__ == "__main__":
             radio_options.append("Constraints diagram")
         if st.session_state.checkpoint_2:
             radio_options.append("Aerodynamics")
+        if st.session_state.checkpoint_3:
+            radio_options.append("Masses")
 
         page = st.radio(
             "Select discipline",
@@ -191,7 +196,7 @@ if __name__ == "__main__":
         )
         # "Right answers" should be here, 150, 6, 122.4, 1.0, 0.09 and 2.0 * 111.2e3
         fig = plot_library.aircraft_geometry_plot(
-            npax=npax,
+            npax=st.session_state.npax,
             npax_per_row=npax_per_row,
             wing_area=st.session_state.mtow / st.session_state.wing_loading,
             htp_volume_coefficient=st.session_state.htp_vol_coeff,
@@ -343,6 +348,8 @@ if __name__ == "__main__":
     if page == "Aerodynamics":
         fig, l_d_max = plot_library.aircraft_aerodynamic_polar_plot(
             wing_area=st.session_state.mtow / st.session_state.wing_loading,
+            htp_area=st.session_state.aircraft_data.htp_area,
+            vtp_area=st.session_state.aircraft_data.vtp_area,
         )
 
         fig.update_layout(
@@ -351,29 +358,56 @@ if __name__ == "__main__":
             margin={"l": 20, "r": 20, "t": 60, "b": 20},
         )
 
-        # ============================================================
-        # MAIN LAYOUT
-        # ============================================================
         col_plot, col_fom = st.columns([2, 1])
-
-        # ============================================================
-        # LEFT — PLOT
-        # ============================================================
 
         with col_plot:
             st.subheader("Aircraft aerodynamics")
 
             st.plotly_chart(fig, width="stretch")
 
-        # ============================================================
-        # RIGHT — FIGURES OF MERIT
-        # ============================================================
-
         with col_fom:
             st.subheader("Figures of merit")
             st.session_state.l_d_max = l_d_max
+            st.session_state.checkpoint_3 = True
             st.metric(
                 label="L/D",
                 value=round(st.session_state.l_d_max, 2),
                 help="Maximum lift over drag ratio",
             )
+
+    if page == "Masses":
+        fig, owe = plot_library.aircraft_empty_mass_breakdown(
+            wing_area=st.session_state.mtow / st.session_state.wing_loading,
+            mtow=st.session_state.mtow,
+            htp_area=st.session_state.aircraft_data.htp_area,
+            vtp_area=st.session_state.aircraft_data.vtp_area,
+            mto_thrust=st.session_state.mtow * 9.81 * st.session_state.thrust_loading,
+            npax=st.session_state.npax,
+        )
+        fig.update_layout(
+            margin={"l": 20, "r": 20, "t": 60, "b": 20},
+        )
+
+        col_plot, col_fom = st.columns([2, 1])
+
+        with col_plot:
+            st.subheader("Aircraft masses")
+
+            st.plotly_chart(fig, width="stretch")
+
+        with col_fom:
+            st.subheader("Figures of merit")
+
+            st.metric(label="OWE", value=round(owe, 0), help="Operating Weight Empty")
+            zfw_design = owe + st.session_state.npax * 90.0  # 90 kg per pax
+            st.metric(
+                label="ZFW",
+                value=round(zfw_design, 0),
+                help="Zero Fuel Weight on design mission",
+            )
+            mzfw = owe + st.session_state.npax * 135  # 135 kg per pax, at max
+            st.metric(
+                label="MZFW", value=round(mzfw, 0), help="Maximum Zero Fuel Weight"
+            )
+            mlw = min(1.06 * mzfw, st.session_state.mtow)
+            st.metric(label="MLW", value=round(mlw, 0), help="Maximum Landing Weight")

@@ -7,11 +7,15 @@ MACH_NUMBER = 0.8  # Representative value, no link with constraint diagram
 
 
 @st.cache_data
-def aircraft_aerodynamic_polar_plot(wing_area: float) -> (go.Figure, float):
+def aircraft_aerodynamic_polar_plot(
+    wing_area: float, htp_area: float, vtp_area: float
+) -> (go.Figure, float):
     """
     Returns a figure plot of the aircraft aerodynamic polar.
 
     :param wing_area: area of the wing
+    :param htp_area: area of the HTP
+    :param vtp_area: area of the VTP
     :return: aircraft aerodynamic polar plot figure
     """
 
@@ -47,7 +51,7 @@ def aircraft_aerodynamic_polar_plot(wing_area: float) -> (go.Figure, float):
         0.1,
         np.radians(28.0),
         0.01,
-        2.0 * aircraft_data.htp_area,
+        2.0 * htp_area,
         cl,
     )
     cd0_vertical_tail = _compute_cd0_lifting_surface(
@@ -56,7 +60,7 @@ def aircraft_aerodynamic_polar_plot(wing_area: float) -> (go.Figure, float):
         0.1,
         np.radians(35.0),
         0.01,
-        2.0 * aircraft_data.vtp_area,
+        2.0 * vtp_area,
         cl,
     )
     cd0_others = np.full_like(cd0_fuselage, 0.0015 + 0.0003)
@@ -246,7 +250,10 @@ def aircraft_aerodynamic_polar_plot(wing_area: float) -> (go.Figure, float):
 
     fig.update_layout(
         title={
-            "text": "Aircraft drag polar", "x": 0.5, "xanchor": "center", "font": {"size": 16}
+            "text": "Aircraft drag polar",
+            "x": 0.5,
+            "xanchor": "center",
+            "font": {"size": 16},
         },
         xaxis={
             "title": "",
