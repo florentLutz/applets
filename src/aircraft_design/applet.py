@@ -31,6 +31,9 @@ if __name__ == "__main__":
     if "checkpoint_3" not in st.session_state:
         st.session_state.checkpoint_3 = False
 
+    if "checkpoint_4" not in st.session_state:
+        st.session_state.checkpoint_4 = False
+
     if "MTOW" not in st.session_state:
         st.session_state.mtow = DEFAULT_MTOW
 
@@ -79,6 +82,8 @@ if __name__ == "__main__":
             radio_options.append("Aerodynamics")
         if st.session_state.checkpoint_3:
             radio_options.append("Masses")
+        if st.session_state.checkpoint_4:
+            radio_options.append("Design mission")
 
         page = st.radio(
             "Select discipline",
@@ -189,6 +194,30 @@ if __name__ == "__main__":
                 key="m_cons",
             )
 
+        elif page == "Design mission":
+            st.header("Design mission definition")
+
+            design_range = st.slider(
+                "Design range [nm]",
+                min_value=1000,
+                max_value=6000,
+                value=4000,
+                step=50,
+                persist_state="session",
+                key="design_range",
+            )
+            st.metric(
+                label="Rate of climb [ft/min]",
+                value=st.session_state.roc_cons,
+            )
+            st.metric(
+                label="Cruise Mach number [-]",
+                value=st.session_state.m_cons,
+            )
+            st.metric(
+                label="Cruise altitude [ft]",
+                value=35000.0,
+            )
         # No specific sidebar for the aerodynamics, no options to choose from really, just to
         # observe
 
@@ -279,38 +308,35 @@ if __name__ == "__main__":
 
             # Until we do the loop to converge the structure and performances OWE are different.
             # Once we have converge, they are by definition, the same
-            if st.session_state.owe_structure != st.session_state.owe_performances or st.session_state.owe_performances == DEFAULT_OWE:
+            if (
+                st.session_state.owe_structure != st.session_state.owe_performances
+                or st.session_state.owe_performances == DEFAULT_OWE
+            ):
                 if st.session_state.owe_structure == DEFAULT_OWE:
                     st.metric(
                         label='OWE "structure"',
                         value="—",
-                        help="OWE obtained with the structural criterion",
+                        help="OWE according to structural criteria",
                     )
                 else:
                     st.metric(
                         label='OWE "structure"',
                         value=round(st.session_state.owe_structure, 0),
-                        help="OWE obtained with the structural criterion",
+                        help="OWE according to structural criteria",
                     )
 
                 if st.session_state.owe_performances == DEFAULT_OWE:
                     st.metric(
                         label='OWE "performances"',
                         value="—",
-                        help="OWE obtained with the performances criterion",
+                        help="OWE according to performances criteria",
                     )
                 else:
                     st.metric(
                         label='OWE "performances"',
                         value=round(st.session_state.owe_performances, 0),
-                        help="OWE obtained with the performances criterion",
+                        help="OWE according to performances criteria",
                     )
-
-            st.metric(
-                label="Range",
-                value="—",
-                help="To be calculated",
-            )
 
     if page == "Constraints diagram":
         col_plot_constraints, col_point_validity = st.columns([2, 1])
@@ -436,16 +462,62 @@ if __name__ == "__main__":
         with col_fom:
             st.subheader("Figures of merit")
 
-            st.metric(label='OWE "structure"', value=round(owe, 0), help="Operating Weight Empty")
-            zfw_design = owe + st.session_state.npax * 90.0  # 90 kg per pax
+            st.metric(
+                label='OWE "structure"',
+                value=round(owe, 0),
+                help="OWE according to structural criteria",
+            )
+            # TODO: create a constants.py file with this inside, the altitude, and others ...
+            zfw_design = owe + st.session_state.npax * 95.0  # 95 kg per pax
             st.metric(
                 label="ZFW",
                 value=round(zfw_design, 0),
                 help="Zero Fuel Weight on design mission",
             )
-            mzfw = owe + st.session_state.npax * 135  # 135 kg per pax, at max
+            mzfw = owe + st.session_state.npax * 135.0  # 135 kg per pax, at max
             st.metric(
                 label="MZFW", value=round(mzfw, 0), help="Maximum Zero Fuel Weight"
             )
             mlw = min(1.06 * mzfw, st.session_state.mtow)
             st.metric(label="MLW", value=round(mlw, 0), help="Maximum Landing Weight")
+            st.session_state.checkpoint_4 = True
+
+    if page == "Design mission":
+        fig, owe, design_fuel = plot_library.aircraft_design_mission(
+            mtow=st.session_state.mtow,
+            mto_thrust=st.session_state.mtow * 9.81 * st.session_state.thrust_loading,
+            npax=st.session_state.npax,
+            design_range=design_range,
+        )
+        fig.update_layout(
+            margin={"l": 20, "r": 20, "t": 60, "b": 20},
+        )
+        st.session_state.owe_performances = owe
+
+        col_plot, col_fom = st.columns([2, 1])
+
+        with col_plot:
+            st.subheader("Aircraft design mission")
+
+            st.plotly_chart(fig, width="stretch")
+
+        with col_fom:
+            st.subheader("Figures of merit")
+
+            st.metric(
+                label="Design mission fuel",
+                value=round(design_fuel, 0),
+                help="Fuel for the design mission",
+            )
+
+            st.metric(
+                label="Design payload",
+                value=round(st.session_state.npax * 95.0, 0),
+                help="Payload mass on the design mission",
+            )
+
+            st.metric(
+                label='OWE "structure"',
+                value=round(owe, 0),
+                help="OWE according to the performances criterion",
+            )
