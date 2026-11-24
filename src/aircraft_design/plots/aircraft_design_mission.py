@@ -4,6 +4,7 @@ import streamlit as st
 
 SFC = 15.0  # g/kN/s or kg/N/s
 SOS_CRUISE = 295.4
+NB_POINT_SWEEP = 500
 
 
 # @st.cache_data
@@ -197,27 +198,61 @@ def _compute_design_mission(
     cruise_speed = SOS_CRUISE * st.session_state.m_cons
 
     # Brute force
-    owe_sweep = np.arange(round(0.3 * mtow, 0), round(0.7 * mtow, 0), 1)
-    zfw_sweep = owe_sweep + npax * 95.0
-    lw_sweep = (
-        zfw_sweep * 1.06
-    )  # 6% reserve, won't be computed here, but could for a nice graph
-    end_of_cruise_mass = lw_sweep + fuel_taxi_in + fuel_descent
+    if type(mtow) is float or type(mtow) is np.float64:
+        owe_sweep = np.linspace(0.3 * mtow, 0.7 * mtow, NB_POINT_SWEEP)
+        zfw_sweep = owe_sweep + npax * 95.0
+        lw_sweep = (
+            zfw_sweep * 1.06
+        )  # 6% reserve, won't be computed here, but could for a nice graph
+        end_of_cruise_mass = lw_sweep + fuel_taxi_in + fuel_descent
 
-    fuel_cruise = end_of_cruise_mass * (
-        np.exp(
-            cruise_range * SFC * 1e-6 * 9.81 / st.session_state.l_d_max / cruise_speed
+        fuel_cruise = end_of_cruise_mass * (
+            np.exp(
+                cruise_range
+                * SFC
+                * 1e-6
+                * 9.81
+                / st.session_state.l_d_max
+                / cruise_speed
+            )
+            - 1.0
         )
-        - 1.0
-    )
-    idx_right_guess = np.argmin(
-        np.abs(start_of_cruise_mass - end_of_cruise_mass - fuel_cruise)
-    )
+        idx_right_guess = np.argmin(
+            np.abs(start_of_cruise_mass - end_of_cruise_mass - fuel_cruise)
+        )
+        correct_cruise_fuel = fuel_cruise[idx_right_guess]
+        correct_owe = owe_sweep[idx_right_guess]
+    else:  # it is an array
+        owe_sweep = np.array(
+            [np.linspace(0.3 * m, 0.7 * m, NB_POINT_SWEEP) for m in mtow]
+        )
+        zfw_sweep = owe_sweep + npax * 95.0
+        lw_sweep = (
+            zfw_sweep * 1.06
+        )  # 6% reserve, won't be computed here, but could for a nice graph
+        end_of_cruise_mass = lw_sweep + fuel_taxi_in[:, np.newaxis] + fuel_descent[:, np.newaxis]
+        fuel_cruise = end_of_cruise_mass * (
+            np.exp(
+                cruise_range
+                * SFC
+                * 1e-6
+                * 9.81
+                / st.session_state.l_d_max
+                / cruise_speed
+            )
+            - 1.0
+        )
+        idx_right_guess = np.argmin(
+            np.abs(start_of_cruise_mass[:, np.newaxis] - end_of_cruise_mass - fuel_cruise), axis=1
+        )
+        correct_cruise_fuel = fuel_cruise[np.arange(len(mtow)), idx_right_guess]
+
+        correct_owe = owe_sweep[np.arange(len(mtow)), idx_right_guess]
 
     fuel_dict = {
         "Taxi out and takeoff": fuel_taxi_takeoff,
         "Climb": fuel_climb,
-        "Cruise": fuel_cruise[idx_right_guess],
+        "Cruise": correct_cruise_fuel,
         "Descent": fuel_descent,
         "Taxi in": fuel_taxi_in,
     }
@@ -229,4 +264,4 @@ def _compute_design_mission(
         "Taxi in": distance_taxi_in,
     }
 
-    return fuel_dict, distance_dict, owe_sweep[idx_right_guess]
+    return fuel_dict, distance_dict, correct_owe

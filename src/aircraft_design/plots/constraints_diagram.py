@@ -2,17 +2,15 @@ import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
 
-CL_MAX_LDG = 3.00
-CL_MAX_TO = 2.56
-CD_MIN = 0.024
-CD_I_COEFF = (
-    1.0 / np.pi / 9.4 / 0.95
-)  # With an assumed AR of 9.4 and oswald coeff of 0.95
+CL_MAX_LDG = 2.8
+CL_MAX_TO = 2.4
+CD_MIN = 0.020
+CD_I_COEFF = 0.04 # Based on the value of FAST-OAD's CeRAS use case
 
 V_Y = 175  # kts IAS, speed best rate of climb for A320
 
 RHO_0 = 1.225  # In kg/m3
-P_CRUISE = 21662  # In Pa, pressure at 39000 ft
+P_CRUISE = 23842  # In Pa, pressure at 35000 ft
 G = 9.81
 MU = 0.04
 

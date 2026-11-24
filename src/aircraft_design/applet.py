@@ -34,7 +34,10 @@ if __name__ == "__main__":
     if "checkpoint_4" not in st.session_state:
         st.session_state.checkpoint_4 = False
 
-    if "MTOW" not in st.session_state:
+    if "checkpoint_5" not in st.session_state:
+        st.session_state.checkpoint_5 = False
+
+    if "mtow" not in st.session_state:
         st.session_state.mtow = DEFAULT_MTOW
 
     if "wing_loading" not in st.session_state:
@@ -84,6 +87,8 @@ if __name__ == "__main__":
             radio_options.append("Masses")
         if st.session_state.checkpoint_4:
             radio_options.append("Design mission")
+        if st.session_state.checkpoint_5:
+            radio_options.append("Mass performances loop")
 
         page = st.radio(
             "Select discipline",
@@ -219,7 +224,7 @@ if __name__ == "__main__":
                 value=35000.0,
             )
         # No specific sidebar for the aerodynamics, no options to choose from really, just to
-        # observe
+        # observe, same for the mass and the mass performances loop.
 
     # ============================================================
     # CALCULATION
@@ -274,14 +279,20 @@ if __name__ == "__main__":
                     value="—",
                 )
             else:
-                result, init_guess_warning = st.columns([1, 1])
-                with result:
+                if st.session_state.mtow == DEFAULT_MTOW:
+                    result, init_guess_warning = st.columns([1, 1])
+                    with result:
+                        st.metric(
+                            label="MTOW",
+                            value=str(round(st.session_state.mtow, 0)),
+                        )
+                    with init_guess_warning:
+                        st.caption("Initial guess")
+                else:
                     st.metric(
                         label="MTOW",
-                        value=str(st.session_state.mtow),
+                        value=str(round(st.session_state.mtow, 0)),
                     )
-                with init_guess_warning:
-                    st.caption("Initial guess")
 
                 st.metric(
                     label="Wing loading [kg/m²]",
@@ -309,7 +320,7 @@ if __name__ == "__main__":
             # Until we do the loop to converge the structure and performances OWE are different.
             # Once we have converge, they are by definition, the same
             if (
-                st.session_state.owe_structure != st.session_state.owe_performances
+                abs(1.0 - st.session_state.owe_performances / st.session_state.owe_structure) > 0.01
                 or st.session_state.owe_performances == DEFAULT_OWE
             ):
                 if st.session_state.owe_structure == DEFAULT_OWE:
@@ -337,6 +348,12 @@ if __name__ == "__main__":
                         value=round(st.session_state.owe_performances, 0),
                         help="OWE according to performances criteria",
                     )
+            else:
+                st.metric(
+                    label='OWE',
+                    value=round(st.session_state.owe_performances, 0),
+                    help="OWE",
+                )
 
     if page == "Constraints diagram":
         col_plot_constraints, col_point_validity = st.columns([2, 1])
@@ -517,7 +534,42 @@ if __name__ == "__main__":
             )
 
             st.metric(
-                label='OWE "structure"',
+                label='OWE "performances"',
                 value=round(owe, 0),
                 help="OWE according to the performances criterion",
+            )
+            st.session_state.checkpoint_5 = True
+
+    if page == "Mass performances loop":
+        fig, owe, mtow = plot_library.mass_performances_loop(
+            npax=st.session_state.npax,
+            design_range=st.session_state.design_range,
+        )
+        fig.update_layout(
+            margin={"l": 20, "r": 20, "t": 60, "b": 20},
+        )
+        st.session_state.owe_performances = owe
+        st.session_state.owe_structure = owe
+        st.session_state.mtow = mtow
+
+        col_plot, col_fom = st.columns([2, 1])
+
+        with col_plot:
+            st.subheader("Mass performances loop")
+
+            st.plotly_chart(fig, width="stretch")
+
+        with col_fom:
+            st.subheader("Figures of merit")
+
+            st.metric(
+                label="MTOW",
+                value=round(mtow, 0),
+                help="Max TakeOff Weight",
+            )
+
+            st.metric(
+                label="OWE",
+                value=round(owe, 0),
+                help="OWE",
             )

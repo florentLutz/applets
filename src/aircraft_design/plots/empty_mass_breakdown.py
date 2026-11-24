@@ -25,7 +25,7 @@ def aircraft_empty_mass_breakdown(
     :return: aircraft empty mass breakdown plot figure, aircraft empty mass
     """
 
-    mass_breakdown = _compute_mass_breakdown(
+    mass_breakdown, _ = _compute_mass_breakdown(
         wing_area, mtow, htp_area, vtp_area, mto_thrust, npax
     )
 
@@ -147,12 +147,12 @@ def aircraft_empty_mass_breakdown(
 @st.cache_data
 def _compute_mass_breakdown(
     wing_area: float,
-    mtow: float,
+    mtow: float | np.ndarray,
     htp_area: float,
     vtp_area: float,
     mto_thrust: float,
     npax: int,
-) -> dict:
+) -> (dict, float | np.ndarray):
     """
     Returns the breakdown of the aircraft empty mass as dict with item names and mass. Separated in
     another function cause we will likely use it for MTOW looping.
@@ -261,7 +261,28 @@ def _compute_mass_breakdown(
         + 0.771 * mtow * 2.20462 / 1000.0
     ) / 2.20462
 
-    return {
+    owe = (
+        wing_mass
+        + htp_mass
+        + vtp_mass
+        + fuselage_mass
+        + nacelle_mass
+        + landing_gear_mass
+        + engine_mass
+        + fuel_system_mass
+        + engine_control_mass
+        + engine_starting_systems_mass
+        + flight_controls_mass
+        + hydraulics_mass
+        + electrical_mass
+        + instrumentation_mass
+        + ecs_systems_mass
+        + oxygen_systems_mass
+        + apu_mass
+        + furnishing_mass
+    )
+
+    mass_dict = {
         "Wing": wing_mass,
         "HTP": htp_mass,
         "VTP": vtp_mass,
@@ -280,3 +301,5 @@ def _compute_mass_breakdown(
         "APU": apu_mass,
         "Furnishing": furnishing_mass,
     }
+
+    return (mass_dict, owe)
