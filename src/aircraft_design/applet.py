@@ -7,6 +7,7 @@ DEFAULT_THRUST_LOADING = 0.5
 DEFAULT_HTP_VOLUME_COEFFICIENT = 0.5
 DEFAULT_VTP_VOLUME_COEFFICIENT = 0.02
 DEFAULT_LD_MAX = -1  # Won't be displayed but need to be recognizable
+DEFAULT_OWE = -42  # Won't be displayed but need to be recognizable
 
 # ============================================================
 # CONFIGURATION
@@ -54,6 +55,12 @@ if __name__ == "__main__":
 
     if "l_d_max" not in st.session_state:
         st.session_state.l_d_max = DEFAULT_LD_MAX
+
+    if "owe_structure" not in st.session_state:
+        st.session_state.owe_structure = DEFAULT_OWE
+
+    if "owe_performances" not in st.session_state:
+        st.session_state.owe_performances = DEFAULT_OWE
 
     # ============================================================
     # SIDEBAR — DESIGN PARAMETERS
@@ -256,6 +263,7 @@ if __name__ == "__main__":
                     label="Thrust loading [-]",
                     value=str(st.session_state.thrust_loading),
                 )
+
             if st.session_state.l_d_max == DEFAULT_LD_MAX:
                 st.metric(
                     label="L/D",
@@ -268,6 +276,35 @@ if __name__ == "__main__":
                     value=round(st.session_state.l_d_max, 2),
                     help="Maximum lift over drag ratio",
                 )
+
+            # Until we do the loop to converge the structure and performances OWE are different.
+            # Once we have converge, they are by definition, the same
+            if st.session_state.owe_structure != st.session_state.owe_performances or st.session_state.owe_performances == DEFAULT_OWE:
+                if st.session_state.owe_structure == DEFAULT_OWE:
+                    st.metric(
+                        label='OWE "structure"',
+                        value="—",
+                        help="OWE obtained with the structural criterion",
+                    )
+                else:
+                    st.metric(
+                        label='OWE "structure"',
+                        value=round(st.session_state.owe_structure, 0),
+                        help="OWE obtained with the structural criterion",
+                    )
+
+                if st.session_state.owe_performances == DEFAULT_OWE:
+                    st.metric(
+                        label='OWE "performances"',
+                        value="—",
+                        help="OWE obtained with the performances criterion",
+                    )
+                else:
+                    st.metric(
+                        label='OWE "performances"',
+                        value=round(st.session_state.owe_performances, 0),
+                        help="OWE obtained with the performances criterion",
+                    )
 
             st.metric(
                 label="Range",
@@ -387,6 +424,7 @@ if __name__ == "__main__":
         fig.update_layout(
             margin={"l": 20, "r": 20, "t": 60, "b": 20},
         )
+        st.session_state.owe_structure = owe
 
         col_plot, col_fom = st.columns([2, 1])
 
@@ -398,7 +436,7 @@ if __name__ == "__main__":
         with col_fom:
             st.subheader("Figures of merit")
 
-            st.metric(label="OWE", value=round(owe, 0), help="Operating Weight Empty")
+            st.metric(label='OWE "structure"', value=round(owe, 0), help="Operating Weight Empty")
             zfw_design = owe + st.session_state.npax * 90.0  # 90 kg per pax
             st.metric(
                 label="ZFW",
