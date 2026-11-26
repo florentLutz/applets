@@ -2,12 +2,14 @@ import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
 
-SFC = 15.0  # g/kN/s or kg/N/s
+from .constants import DESIGN_PAX_MASS
+
+SFC = 17.0  # g/kN/s
 SOS_CRUISE = 295.4
 NB_POINT_SWEEP = 500
 
 
-# @st.cache_data
+@st.cache_data
 def aircraft_design_mission(
     mtow: float, mto_thrust: float, npax: int, design_range: float
 ) -> (go.Figure, float, float):
@@ -89,10 +91,18 @@ def aircraft_design_mission(
         annotation_font={"size": 20, "color": "#3498DB"},
     )
     fig.add_hline(
+        y=mass_array[-2],
+        line_dash="dash",
+        line_color="#27AE60",
+        annotation_text="LW",
+        annotation_position="top left",
+        annotation_font={"size": 20, "color": "#27AE60"},
+    )
+    fig.add_hline(
         y=mass_array[-1],
         line_dash="dash",
         line_color="#27AE60",
-        annotation_text="MLW",
+        annotation_text="ZFW",
         annotation_position="top left",
         annotation_font={"size": 20, "color": "#27AE60"},
     )
@@ -113,9 +123,21 @@ def aircraft_design_mission(
     fig.add_annotation(
         x=design_range,
         y=mass_array[-1],
-        text="Landing and taxi in",
+        text="Reserves +",
         showarrow=False,
         xshift=15,
+        yshift=15,
+        textangle=-90,
+        xanchor="center",
+        yanchor="bottom",
+        font={"size": 20},
+    )
+    fig.add_annotation(
+        x=design_range,
+        y=mass_array[-1],
+        text="Landing and taxi in",
+        showarrow=False,
+        xshift=37,
         yshift=15,
         textangle=-90,
         xanchor="center",
@@ -153,7 +175,7 @@ def aircraft_design_mission(
     return fig, owe, mass_array[0] - mass_array[-1]
 
 
-# @st.cache_data
+@st.cache_data
 def _compute_design_mission(
     design_range: float, mtow: float | np.ndarray, npax: int, mto_thrust: float
 ) -> (dict, dict, float):
@@ -172,7 +194,9 @@ def _compute_design_mission(
     distance_taxi_takeoff = 0.0
 
     tas_climb = 400.0 * 0.5144  # In m/s, 400 kts based on a 300 KCAS at 20000ft
-    vz_climb = st.session_state.roc_cons * 0.00508
+    vz_climb = (
+        st.session_state.roc_cons * 0.00508 / 1.5625
+    )  # Avg value, Vz decreases after initial climb
     gamma_climb = np.arcsin(vz_climb / tas_climb)
     vx_climb = tas_climb * np.cos(gamma_climb)
     time_to_climb = 35000 / st.session_state.roc_cons * 60.0
@@ -183,8 +207,8 @@ def _compute_design_mission(
     )
 
     fuel_climb = (
-        SFC * thrust_climb / 1000.0 * time_to_climb / 1000.0
-    )  # N to kN, and g to kg
+        1.5 * SFC * thrust_climb / 1000.0 * time_to_climb / 1000.0
+    )  # N to kN, and g to kg. 1.5 penalty to account for not ideal climb profile.
     distance_climb = vx_climb * time_to_climb / 1852.0  # In nautical miles
     start_of_cruise_mass = mass_start_climb - fuel_climb
 
@@ -200,7 +224,7 @@ def _compute_design_mission(
     # Brute force
     if type(mtow) is float or type(mtow) is np.float64:
         owe_sweep = np.linspace(0.3 * mtow, 0.7 * mtow, NB_POINT_SWEEP)
-        zfw_sweep = owe_sweep + npax * 95.0
+        zfw_sweep = owe_sweep + npax * DESIGN_PAX_MASS
         lw_sweep = (
             zfw_sweep * 1.06
         )  # 6% reserve, won't be computed here, but could for a nice graph
@@ -222,15 +246,18 @@ def _compute_design_mission(
         )
         correct_cruise_fuel = fuel_cruise[idx_right_guess]
         correct_owe = owe_sweep[idx_right_guess]
+        correct_reserve_fuel = 0.06 * zfw_sweep[idx_right_guess]
     else:  # it is an array
         owe_sweep = np.array(
             [np.linspace(0.3 * m, 0.7 * m, NB_POINT_SWEEP) for m in mtow]
         )
-        zfw_sweep = owe_sweep + npax * 95.0
+        zfw_sweep = owe_sweep + npax * DESIGN_PAX_MASS
         lw_sweep = (
             zfw_sweep * 1.06
         )  # 6% reserve, won't be computed here, but could for a nice graph
-        end_of_cruise_mass = lw_sweep + fuel_taxi_in[:, np.newaxis] + fuel_descent[:, np.newaxis]
+        end_of_cruise_mass = (
+            lw_sweep + fuel_taxi_in[:, np.newaxis] + fuel_descent[:, np.newaxis]
+        )
         fuel_cruise = end_of_cruise_mass * (
             np.exp(
                 cruise_range
@@ -243,11 +270,14 @@ def _compute_design_mission(
             - 1.0
         )
         idx_right_guess = np.argmin(
-            np.abs(start_of_cruise_mass[:, np.newaxis] - end_of_cruise_mass - fuel_cruise), axis=1
+            np.abs(
+                start_of_cruise_mass[:, np.newaxis] - end_of_cruise_mass - fuel_cruise
+            ),
+            axis=1,
         )
         correct_cruise_fuel = fuel_cruise[np.arange(len(mtow)), idx_right_guess]
-
         correct_owe = owe_sweep[np.arange(len(mtow)), idx_right_guess]
+        correct_reserve_fuel = 0.06 * zfw_sweep[np.arange(len(mtow)), idx_right_guess]
 
     fuel_dict = {
         "Taxi out and takeoff": fuel_taxi_takeoff,
@@ -255,6 +285,7 @@ def _compute_design_mission(
         "Cruise": correct_cruise_fuel,
         "Descent": fuel_descent,
         "Taxi in": fuel_taxi_in,
+        "Reserves": correct_reserve_fuel,
     }
     distance_dict = {
         "Taxi out and takeoff": distance_taxi_takeoff,
@@ -262,6 +293,7 @@ def _compute_design_mission(
         "Cruise": cruise_range / 1852.0,
         "Descent": distance_descent,
         "Taxi in": distance_taxi_in,
+        "Reserves": 0.0,
     }
 
     return fuel_dict, distance_dict, correct_owe

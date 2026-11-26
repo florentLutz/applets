@@ -2,10 +2,10 @@ import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
 
-CL_MAX_LDG = 2.8
+CL_MAX_LDG = 3.0
 CL_MAX_TO = 2.4
 CD_MIN = 0.020
-CD_I_COEFF = 0.04 # Based on the value of FAST-OAD's CeRAS use case
+CD_I_COEFF = 0.04  # Based on the value of FAST-OAD's CeRAS use case
 
 V_Y = 175  # kts IAS, speed best rate of climb for A320
 
@@ -45,10 +45,8 @@ def constraints_diagram(
     # mass varies, it will require adaptation
     wing_loading = np.linspace(100, 900, 801)
 
-    # Stall constraint is fairly simple, we'll do it inline. 0.85 is the MLW to MTOW ratio
-    wing_loading_ldg = (
-        RHO_0 * (stall_speed * 0.5144) ** 2.0 * CL_MAX_LDG / 2.0 / G / 0.85
-    )
+    # Stall constraint is fairly simple, we'll do it inline. 0.88 is the MLW to MTOW ratio
+    wing_loading_ldg = RHO_0 * (stall_speed * 0.5144) ** 2.0 * CL_MAX_LDG / 2.0 / G
     if wing_loading_design <= wing_loading_ldg:
         respected_constraints.append("Landing")
     else:

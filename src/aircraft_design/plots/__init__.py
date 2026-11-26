@@ -4,6 +4,7 @@ from .aircraft_geometry import aircraft_geometry_plot
 from .constraints_diagram import constraints_diagram
 from .empty_mass_breakdown import aircraft_empty_mass_breakdown
 from .mass_performances_loop import mass_performances_loop
+from .payload_range import payload_range
 
 __all__ = [
     "aircraft_aerodynamic_polar_plot",
@@ -12,4 +13,5 @@ __all__ = [
     "aircraft_geometry_plot",
     "constraints_diagram",
     "mass_performances_loop",
+    "payload_range",
 ]

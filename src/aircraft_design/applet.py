@@ -1,5 +1,6 @@
 import plots as plot_library
 import streamlit as st
+from plots.constants import DESIGN_PAX_MASS
 
 DEFAULT_MTOW = 100e3
 DEFAULT_WING_LOADING = 250
@@ -36,6 +37,9 @@ if __name__ == "__main__":
 
     if "checkpoint_5" not in st.session_state:
         st.session_state.checkpoint_5 = False
+
+    if "checkpoint_6" not in st.session_state:
+        st.session_state.checkpoint_6 = False
 
     if "mtow" not in st.session_state:
         st.session_state.mtow = DEFAULT_MTOW
@@ -89,6 +93,8 @@ if __name__ == "__main__":
             radio_options.append("Design mission")
         if st.session_state.checkpoint_5:
             radio_options.append("Mass performances loop")
+        if st.session_state.checkpoint_6:
+            radio_options.append("Payload-range")
 
         page = st.radio(
             "Select discipline",
@@ -226,6 +232,35 @@ if __name__ == "__main__":
         # No specific sidebar for the aerodynamics, no options to choose from really, just to
         # observe, same for the mass and the mass performances loop.
 
+        elif page == "Payload-range":
+            k_l_d_max = st.slider(
+                "Aerodynamic improvement factor [-]",
+                min_value=0.8,
+                max_value=1.2,
+                value=1.0,
+                step=0.01,
+                persist_state="session",
+                key="k_l_d_max",
+            )
+            k_sfc = st.slider(
+                "Propulsion improvement factor [-]",
+                min_value=0.8,
+                max_value=1.2,
+                value=1.0,
+                step=0.01,
+                persist_state="session",
+                key="k_sfc",
+            )
+            k_mass = st.slider(
+                "Mass improvement factor [-]",
+                min_value=0.8,
+                max_value=1.2,
+                value=1.0,
+                step=0.01,
+                persist_state="session",
+                key="k_mass",
+            )
+
     # ============================================================
     # CALCULATION
     # ============================================================
@@ -320,7 +355,11 @@ if __name__ == "__main__":
             # Until we do the loop to converge the structure and performances OWE are different.
             # Once we have converge, they are by definition, the same
             if (
-                abs(1.0 - st.session_state.owe_performances / st.session_state.owe_structure) > 0.01
+                abs(
+                    1.0
+                    - st.session_state.owe_performances / st.session_state.owe_structure
+                )
+                > 0.01
                 or st.session_state.owe_performances == DEFAULT_OWE
             ):
                 if st.session_state.owe_structure == DEFAULT_OWE:
@@ -350,7 +389,7 @@ if __name__ == "__main__":
                     )
             else:
                 st.metric(
-                    label='OWE',
+                    label="OWE",
                     value=round(st.session_state.owe_performances, 0),
                     help="OWE",
                 )
@@ -485,7 +524,7 @@ if __name__ == "__main__":
                 help="OWE according to structural criteria",
             )
             # TODO: create a constants.py file with this inside, the altitude, and others ...
-            zfw_design = owe + st.session_state.npax * 95.0  # 95 kg per pax
+            zfw_design = owe + st.session_state.npax * DESIGN_PAX_MASS  # 95 kg per pax
             st.metric(
                 label="ZFW",
                 value=round(zfw_design, 0),
@@ -529,7 +568,7 @@ if __name__ == "__main__":
 
             st.metric(
                 label="Design payload",
-                value=round(st.session_state.npax * 95.0, 0),
+                value=round(st.session_state.npax * DESIGN_PAX_MASS, 0),
                 help="Payload mass on the design mission",
             )
 
@@ -573,3 +612,28 @@ if __name__ == "__main__":
                 value=round(owe, 0),
                 help="OWE",
             )
+
+        st.session_state.checkpoint_6 = True
+
+    if page == "Payload-range":
+        fig = plot_library.payload_range(
+            mtow=st.session_state.mtow,
+            mto_thrust=st.session_state.mtow * 9.81 * st.session_state.thrust_loading,
+            npax=st.session_state.npax,
+            design_range=st.session_state.design_range,
+            owe=st.session_state.owe_performances,
+            wing_area=st.session_state.mtow / st.session_state.wing_loading,
+            k_l_d_max=k_l_d_max,
+            k_sfc=k_sfc,
+            k_owe=k_mass,
+        )
+        fig.update_layout(
+            margin={"l": 20, "r": 20, "t": 60, "b": 20},
+        )
+
+        col_plot, col_fom = st.columns([2, 1])
+
+        with col_plot:
+            st.subheader("Payload-range diagram")
+
+            st.plotly_chart(fig, width="stretch")

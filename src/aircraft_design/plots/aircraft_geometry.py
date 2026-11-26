@@ -237,7 +237,7 @@ def _fuselage_trace(
 
     # Tweak this the right visual on the final aircraft
     seat_width = 0.48
-    seat_length = 0.95
+    seat_length = 0.81
     aisle_width = 0.43
 
     n_aisle = 1.0 if npax_per_row < 6.0 else 2.0

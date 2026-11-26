@@ -155,7 +155,7 @@ def _compute_mass_breakdown(
 ) -> (dict, float | np.ndarray):
     """
     Returns the breakdown of the aircraft empty mass as dict with item names and mass. Separated in
-    another function cause we will likely use it for MTOW looping.
+    another function because we will likely use it for MTOW looping.
 
     :param wing_area: area of the wing in m²
     :param mtow: MTOW of the aircraft in kg
@@ -171,7 +171,8 @@ def _compute_mass_breakdown(
     # GD method
     wing_mass = (
         (
-            0.00428
+            1.1
+            * 0.00428
             * (wing_area * 10.76391) ** 0.48
             * aircraft_data.wing_aspect_ratio
             * 0.85**0.43
@@ -223,10 +224,16 @@ def _compute_mass_breakdown(
     nacelle_mass = 0.065 * mto_thrust * 0.2248089431 / 2.20462
     # GD method
     landing_gear_mass = 62.61 * (mtow * 2.20462 / 1000.0) ** 0.84 / 2.20462
+    paint_mass = 0.180 * (
+        wing_area * 2.1
+        + htp_area * 2.1
+        + vtp_area * 2.1
+        + aircraft_data.fuselage_wetted_area
+    )
 
     engine_mass = (14.1e-3 * mto_thrust / 2.0 + 648) * 2.0 * 1.55
     # 2 tanks and 2 engine, 23860l of mission fuel (we'll break the loop here)
-    fuel_system_mass = 80 * 3 + 15 * 2**0.5 * (23860 * 0.264172) ** 0.333 / 2.20462
+    fuel_system_mass = (80 * 3 + 15 * 2**0.5 * (23860 * 0.264172) ** 0.333) / 2.20462
     engine_control_mass = (
         88.46
         * (
@@ -238,15 +245,21 @@ def _compute_mass_breakdown(
         ** 0.294
         / 2.20462
     )
-    engine_starting_systems_mass = 9.33 * (engine_mass * 2.20462 / 1000.0) ** 1.078
+    engine_starting_systems_mass = (
+        9.33 * (engine_mass * 2.20462 / 1000.0) ** 1.078 / 2.20462
+    )
+    unconsummables_mass = 25 * 2.0 + 0.0035 * 23860 * 0.762  # 23860l of Jet A1 in kg
 
     flight_controls_mass = 0.64 * (mtow * 2.20462) ** 0.6667 / 2.20462
     hydraulics_mass = 0.009 * mtow
     electrical_mass = 0.0174 * mtow  # Cessna method adapted to commercial AC
-    instrumentation_mass = (160 + 0.006 * mtow * 2.20462) / 2.20462
+    instrumentation_mass = (
+        160 + 0.006 * mtow * 2.20462
+    ) / 2.20462 + 100.0  # 100kg of radar
     ecs_systems_mass = (
         6.75 * (aircraft_data.cabin_length * 3.280839895) ** 1.28 / 2.20462
     )
+    insulation_mass = 9.3 * aircraft_data.fuselage_length * aircraft_data.fuselage_width
     oxygen_systems_mass = 7 * (2.0 + npax) ** 0.702 / 2.20462
     apu_mass = 0.008 * mtow
 
@@ -261,6 +274,8 @@ def _compute_mass_breakdown(
         + 0.771 * mtow * 2.20462 / 1000.0
     ) / 2.20462
 
+    crew_mass = 2.0 * 85.0 + 4.0 * 75.0  # 85 per PT, 75 per PNC
+
     owe = (
         wing_mass
         + htp_mass
@@ -268,18 +283,22 @@ def _compute_mass_breakdown(
         + fuselage_mass
         + nacelle_mass
         + landing_gear_mass
+        + paint_mass
         + engine_mass
         + fuel_system_mass
         + engine_control_mass
         + engine_starting_systems_mass
+        + unconsummables_mass
         + flight_controls_mass
         + hydraulics_mass
         + electrical_mass
         + instrumentation_mass
         + ecs_systems_mass
+        + insulation_mass
         + oxygen_systems_mass
         + apu_mass
         + furnishing_mass
+        + crew_mass
     )
 
     mass_dict = {
@@ -289,17 +308,21 @@ def _compute_mass_breakdown(
         "Fuselage": fuselage_mass,
         "Nacelles": nacelle_mass,
         "Landing gear": landing_gear_mass,
+        "Paint": paint_mass,
         "Engine": engine_mass,
         "Fuel system": fuel_system_mass,
         "Engine control": engine_control_mass + engine_starting_systems_mass,
+        "Unconsummables": unconsummables_mass,
         "Flight controls": flight_controls_mass,
         "Hydraulic system": hydraulics_mass,
         "Electric system": electrical_mass,
         "Instrumentation": instrumentation_mass,
-        "ECS & IPS ": ecs_systems_mass,
+        "ECS & IPS": ecs_systems_mass,
+        "Insulation": insulation_mass,
         "Oxygen": oxygen_systems_mass,
         "APU": apu_mass,
         "Furnishing": furnishing_mass,
+        "Crew": crew_mass,
     }
 
-    return (mass_dict, owe)
+    return mass_dict, owe
