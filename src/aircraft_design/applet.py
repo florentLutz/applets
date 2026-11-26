@@ -1,3 +1,4 @@
+import numpy as np
 import plots as plot_library
 import streamlit as st
 from plots.constants import DESIGN_PAX_MASS
@@ -9,6 +10,7 @@ DEFAULT_HTP_VOLUME_COEFFICIENT = 0.5
 DEFAULT_VTP_VOLUME_COEFFICIENT = 0.02
 DEFAULT_LD_MAX = -1  # Won't be displayed but need to be recognizable
 DEFAULT_OWE = -42  # Won't be displayed but need to be recognizable
+SOS_CRUISE = 295.4
 
 # ============================================================
 # CONFIGURATION
@@ -41,6 +43,9 @@ if __name__ == "__main__":
     if "checkpoint_6" not in st.session_state:
         st.session_state.checkpoint_6 = False
 
+    if "checkpoint_7" not in st.session_state:
+        st.session_state.checkpoint_7 = False
+
     if "mtow" not in st.session_state:
         st.session_state.mtow = DEFAULT_MTOW
 
@@ -72,6 +77,9 @@ if __name__ == "__main__":
     if "owe_performances" not in st.session_state:
         st.session_state.owe_performances = DEFAULT_OWE
 
+    if "simple_breguet_history" not in st.session_state:
+        st.session_state.simple_breguet_history = []
+
     # ============================================================
     # SIDEBAR — DESIGN PARAMETERS
     # ============================================================
@@ -95,6 +103,8 @@ if __name__ == "__main__":
             radio_options.append("Mass performances loop")
         if st.session_state.checkpoint_6:
             radio_options.append("Payload-range")
+        if st.session_state.checkpoint_7:
+            radio_options.append("Simple Breguet")
 
         page = st.radio(
             "Select discipline",
@@ -259,6 +269,62 @@ if __name__ == "__main__":
                 step=0.01,
                 persist_state="session",
                 key="k_mass",
+            )
+
+        elif page == "Simple Breguet":
+            st.number_input(
+                "Cruise Mach number [-]",
+                min_value=0.6,
+                max_value=1.85,
+                value=0.78,
+                step=0.01,
+                persist_state="session",
+                key="simple_breguet_mach",
+            )
+            st.number_input(
+                "Lift to drag ratio [-]",
+                min_value=10.0,
+                max_value=25.0,
+                value=17.0,
+                step=0.01,
+                persist_state="session",
+                key="simple_breguet_l_d",
+            )
+            st.number_input(
+                "SFC [g/kN/s]",
+                min_value=10.0,
+                max_value=25.0,
+                value=15.0,
+                step=0.01,
+                persist_state="session",
+                key="simple_breguet_sfc",
+            )
+            st.number_input(
+                "OWE [t]",
+                min_value=10.0,
+                max_value=100.0,
+                value=40.0,
+                step=1.0,
+                persist_state="session",
+                key="simple_breguet_owe",
+            )
+            st.number_input(
+                "Payload mass [t]",
+                min_value=5.0,
+                max_value=50.0,
+                value=40.0,
+                step=1.0,
+                persist_state="session",
+                key="simple_breguet_payload",
+            )
+            st.number_input(
+                "Fuel mass [t]",
+                min_value=5.0,
+                max_value=50.0,
+                value=20.0,
+                step=1.0,
+                persist_state="session",
+                key="simple_breguet_fuel",
             )
 
     # ============================================================
@@ -637,3 +703,56 @@ if __name__ == "__main__":
             st.subheader("Payload-range diagram")
 
             st.plotly_chart(fig, width="stretch")
+
+        st.session_state.checkpoint_7 = True
+
+    if page == "Simple Breguet":
+        range_simple_breguet = round(
+            (
+                st.session_state.simple_breguet_mach
+                * SOS_CRUISE
+                * st.session_state.simple_breguet_l_d
+                / (st.session_state.simple_breguet_sfc * 1e-6)
+                / 9.81
+                * np.log(
+                    (
+                        st.session_state.simple_breguet_owe
+                        + st.session_state.simple_breguet_payload
+                        + st.session_state.simple_breguet_fuel
+                    )
+                    / (
+                        1.06
+                        * (
+                            st.session_state.simple_breguet_owe
+                            + st.session_state.simple_breguet_payload
+                        )
+                    )
+                )
+            )
+            / 1852.0,
+            0,
+        )  # m to nm
+
+        col_computation, col_hist = st.columns([2, 1])
+
+        st.session_state.simple_breguet_history.append(range_simple_breguet)
+
+        with col_hist:
+            st.subheader("Breguet computation history")
+
+            for history_item in st.session_state.simple_breguet_history:
+                st.write(
+                    f"{history_item:.2f} nm",
+                )
+
+        with col_computation:
+            st.subheader("Breguet range equation")
+
+            st.latex(r"""
+            R = \frac{V_f}{g \cdot SFC}
+            \ln\left(\frac{M_i}{M_f}\right)
+            """)
+            st.metric(
+                "Achievable range [nm]",
+                f"{range_simple_breguet:.2f} nm",
+            )
